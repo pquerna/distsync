@@ -28,8 +28,11 @@ func Factory(ui cli.Ui) map[string]cli.CommandFactory {
 				Ui: ui,
 			}, nil
 		},
-		//		"setup":  command.Setup,
-		//		"daemon": command.Daemon,
+		"setup": func() (cli.Command, error) {
+			return &Setup{
+				Ui: ui,
+			}, nil
+		},
 	}
 	return x
 }

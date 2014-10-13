@@ -28,7 +28,11 @@ import (
 func main() {
 
 	c := cli.NewCLI("distsync", "0.1.0")
-	ui := &cli.BasicUi{Writer: os.Stdout}
+	ui := &cli.BasicUi{
+		Reader:      os.Stdin,
+		Writer:      os.Stdout,
+		ErrorWriter: os.Stderr,
+	}
 
 	c.Args = os.Args[1:]
 	c.Commands = command.Factory(ui)
