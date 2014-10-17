@@ -1,3 +1,5 @@
+# STATUS: WIP.
+
 # distsync: sync files from object stores to your servers.
 
 `distsync` makes synchorizing files from an object store like S3 to your servers very easy.
