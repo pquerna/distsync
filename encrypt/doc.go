@@ -17,6 +17,19 @@
 
 package encrypt
 
-type Encryptor interface{}
+import (
+	"io"
+)
 
-type Decryptor interface{}
+type Encryptor interface {
+	Encrypt(io.Reader, io.Writer) error
+}
+
+type Decryptor interface {
+	Decrypt(io.Reader, io.Writer) error
+}
+
+type Cryptor interface {
+	Encryptor
+	Decryptor
+}
