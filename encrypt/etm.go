@@ -1,3 +1,20 @@
+/**
+ *  Copyright 2014 Paul Querna
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
 package encrypt
 
 import (
@@ -12,8 +29,7 @@ import (
 )
 
 type EtmCryptor struct {
-	c     cipher.AEAD
-	nonce []byte
+	c cipher.AEAD
 }
 
 // TODO: make streaming :*(
@@ -25,8 +41,7 @@ func NewEtmCryptor(secret []byte) (Cryptor, error) {
 	}
 
 	return &EtmCryptor{
-		c:     e,
-		nonce: nil,
+		c: e,
 	}, nil
 }
 
@@ -47,13 +62,15 @@ var v1maxChunkSize = uint32(v1chunkSize * 10)
 func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 	buf := make([]byte, v1chunkSize)
 	nonce := make([]byte, e.c.NonceSize())
-	enbuf := make([]byte, int(v1chunkSize)+e.c.Overhead())
-	io.WriteString(w, "distsync01")
+	enbuf := make([]byte, cap(buf)+e.c.Overhead())
+	lbuf := make([]byte, 4)
+	_, err := io.WriteString(w, "distsync01")
+	if err != nil {
+		return err
+	}
 
 	for {
-		buf = buf[0:0]
 		enbuf = enbuf[0:0]
-		nonce = nonce[0:0]
 
 		n, err := r.Read(buf)
 
@@ -63,9 +80,8 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 				return err
 			}
 
-			_ = e.c.Seal(enbuf, nonce, buf[:n], []byte{})
+			enbuf = e.c.Seal(enbuf, nonce, buf[:n], []byte{})
 
-			lbuf := make([]byte, 4)
 			binary.BigEndian.PutUint32(lbuf, uint32(len(enbuf)))
 
 			_, err = w.Write(lbuf)
@@ -80,6 +96,11 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 		}
 
 		if err == io.EOF {
+			binary.BigEndian.PutUint32(lbuf, 0)
+			_, err = w.Write(lbuf)
+			if err != nil {
+				return err
+			}
 			break
 		} else if err != nil {
 			return err
@@ -91,6 +112,7 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 
 func (e *EtmCryptor) Decrypt(r io.Reader, w io.Writer) error {
 	header := make([]byte, 10)
+	lbuf := make([]byte, 4)
 	_, err := io.ReadFull(r, header)
 	if err != nil {
 		return err
@@ -101,11 +123,8 @@ func (e *EtmCryptor) Decrypt(r io.Reader, w io.Writer) error {
 	}
 
 	for {
-		lbuf := make([]byte, 4)
 		_, err := io.ReadFull(r, lbuf)
-		if err == io.ErrUnexpectedEOF {
-			return nil
-		} else if err != nil {
+		if err != nil {
 			return err
 		}
 
@@ -114,8 +133,13 @@ func (e *EtmCryptor) Decrypt(r io.Reader, w io.Writer) error {
 			return errors.New("invalid size in of encrypted chunk")
 		}
 
+		if llen == 0 {
+			// EOF, zero length block.
+			return nil
+		}
+
 		buf := make([]byte, llen)
-		clearbuf := make([]byte, llen)
+		clearbuf := make([]byte, 0, llen)
 
 		_, err = io.ReadFull(r, buf)
 
@@ -123,7 +147,8 @@ func (e *EtmCryptor) Decrypt(r io.Reader, w io.Writer) error {
 			return err
 		}
 
-		_, err = e.c.Open(clearbuf, nil, buf, []byte{})
+		clearbuf, err = e.c.Open(clearbuf, nil, buf, []byte{})
+
 		if err != nil {
 			return err
 		}
