@@ -33,6 +33,11 @@ func Factory(ui cli.Ui) map[string]cli.CommandFactory {
 				Ui: ui,
 			}, nil
 		},
+		"test-crypt": func() (cli.Command, error) {
+			return &TestCrypt{
+				Ui: ui,
+			}, nil
+		},
 	}
 	return x
 }
