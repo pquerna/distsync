@@ -22,14 +22,17 @@ import (
 
 	"bytes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"io"
 )
 
 type EtmCryptor struct {
-	c cipher.AEAD
+	secret []byte
+	c      cipher.AEAD
 }
 
 // TODO: make streaming :*(
@@ -41,7 +44,8 @@ func NewEtmCryptor(secret []byte) (Cryptor, error) {
 	}
 
 	return &EtmCryptor{
-		c: e,
+		secret: secret,
+		c:      e,
 	}, nil
 }
 
@@ -56,6 +60,8 @@ var v1maxChunkSize = uint32(v1chunkSize * 10)
 //
 // Header: 10 bytes for version and cipher identification.
 //		"distsync01": v1, AEAD_AES_128_CBC_HMAC_SHA_256.
+//		mac []byte: 32 byte HMAC of file contents.
+//
 // Data block:
 // 		4-bytes chunk size. (PutUint32)
 // 		AEAD encrypted data.
@@ -64,7 +70,11 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 	nonce := make([]byte, e.c.NonceSize())
 	enbuf := make([]byte, cap(buf)+e.c.Overhead())
 	lbuf := make([]byte, 4)
+	// TOOD: TeeWriter for HMAC?
+	mac := hmac.New(sha256.New, e.secret)
+
 	_, err := io.WriteString(w, "distsync01")
+	mac.Write([]byte("distsync01"))
 	if err != nil {
 		return err
 	}
@@ -85,11 +95,13 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 			binary.BigEndian.PutUint32(lbuf, uint32(len(enbuf)))
 
 			_, err = w.Write(lbuf)
+			mac.Write(lbuf)
 			if err != nil {
 				return err
 			}
 
 			_, err = w.Write(enbuf)
+			mac.Write(enbuf)
 			if err != nil {
 				return err
 			}
@@ -98,6 +110,7 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 		if err == io.EOF {
 			binary.BigEndian.PutUint32(lbuf, 0)
 			_, err = w.Write(lbuf)
+			mac.Write(lbuf)
 			if err != nil {
 				return err
 			}
@@ -107,12 +120,20 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 		}
 	}
 
+	outmac := mac.Sum(nil)
+
+	_, err = w.Write(outmac)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (e *EtmCryptor) Decrypt(r io.Reader, w io.Writer) error {
 	header := make([]byte, 10)
 	lbuf := make([]byte, 4)
+	mac := hmac.New(sha256.New, e.secret)
 	_, err := io.ReadFull(r, header)
 	if err != nil {
 		return err
@@ -122,19 +143,33 @@ func (e *EtmCryptor) Decrypt(r io.Reader, w io.Writer) error {
 		return errors.New("Unknown header in encrypted file.")
 	}
 
+	mac.Write(header)
+
 	for {
 		_, err := io.ReadFull(r, lbuf)
 		if err != nil {
 			return err
 		}
 
+		mac.Write(lbuf)
 		llen := binary.BigEndian.Uint32(lbuf)
 		if llen > v1maxChunkSize {
 			return errors.New("invalid size in of encrypted chunk")
 		}
 
 		if llen == 0 {
-			// EOF, zero length block.
+			// EOF, zero length block, next 32 bytes are HMAC.
+			messageMAC := make([]byte, 32)
+			_, err = io.ReadFull(r, messageMAC)
+			if err != nil {
+				return err
+			}
+
+			expectedMAC := mac.Sum(nil)
+			rv := hmac.Equal(messageMAC, expectedMAC)
+			if rv != true {
+				return errors.New("File HMAC failed.")
+			}
 			return nil
 		}
 
@@ -146,6 +181,8 @@ func (e *EtmCryptor) Decrypt(r io.Reader, w io.Writer) error {
 		if err != nil {
 			return err
 		}
+
+		mac.Write(buf)
 
 		clearbuf, err = e.c.Open(clearbuf, nil, buf, []byte{})
 
