@@ -18,15 +18,45 @@
 package common
 
 import (
-	"github.com/stvp/go-toml-config"
+	"github.com/BurntSushi/toml"
+
+	"bytes"
+	"io/ioutil"
 )
 
-type S3Conf struct {
+type Conf struct {
+	SharedSecret   string
+	EncryptBackend string
+	NotifyBackend  string
+	UploadBackend  string
+	AwsCreds       AwsCreds
+}
+
+type AwsCreds struct {
 	Region    string
 	AccessKey string
 	SecretKey string
 }
 
-func Config(file string) {
-	config.Parse("/path/to/my_app.conf")
+func ConfFromFile(file string) (*Conf, error) {
+
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	c := Conf{}
+
+	toml.Decode(string(data), &c)
+
+	return &c, nil
+}
+
+func (c *Conf) ToString() (string, error) {
+	buf := bytes.Buffer{}
+	err := toml.NewEncoder(&buf).Encode(c)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

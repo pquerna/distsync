@@ -51,11 +51,13 @@ func Choice(ui cli.Ui, question string, options []string) (int, error) {
 				ui.Output(fmt.Sprintf("Invalid selection: %d", v))
 				continue
 			}
+			ui.Output("")
 			return s, nil
 		}
 
 		for i, s := range options {
 			if strings.ToLower(s) == strings.ToLower(answer) {
+				ui.Output("")
 				return i, nil
 			}
 		}
