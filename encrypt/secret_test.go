@@ -20,26 +20,29 @@ package encrypt
 import (
 	"github.com/pquerna/distsync/common"
 
-	"io"
+	"testing"
 )
 
-type Encryptor interface {
-	Encrypt(io.Reader, io.Writer) error
-}
-
-type Decryptor interface {
-	Decrypt(io.Reader, io.Writer) error
-}
-
-type Cryptor interface {
-	Encryptor
-	Decryptor
-}
-
-func NewFromConf(c *common.Conf) (Cryptor, error) {
-	secret, err := decodeSecret(c.SharedSecret)
+func TestSecrets(t *testing.T) {
+	sec, err := RandomSecret()
 	if err != nil {
-		return nil, err
+		t.Fatalf("error: %v", err)
 	}
-	return NewEtmCryptor(secret)
+
+	c := common.Conf{
+		SharedSecret: sec,
+	}
+	_, err = NewFromConf(&c)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	c = common.Conf{
+		SharedSecret: "aa" + sec,
+	}
+	_, err = NewFromConf(&c)
+	if err == nil {
+		t.Fatal("expected error from corrupted secret")
+	}
+
 }

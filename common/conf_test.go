@@ -15,31 +15,14 @@
  *
  */
 
-package encrypt
+package common
 
 import (
-	"github.com/pquerna/distsync/common"
-
-	"io"
+	"testing"
 )
 
-type Encryptor interface {
-	Encrypt(io.Reader, io.Writer) error
-}
-
-type Decryptor interface {
-	Decrypt(io.Reader, io.Writer) error
-}
-
-type Cryptor interface {
-	Encryptor
-	Decryptor
-}
-
-func NewFromConf(c *common.Conf) (Cryptor, error) {
-	secret, err := decodeSecret(c.SharedSecret)
-	if err != nil {
-		return nil, err
-	}
-	return NewEtmCryptor(secret)
+func TestConf(t *testing.T) {
+	c := Conf{}
+	str, _ := c.ToString()
+	println(str)
 }
