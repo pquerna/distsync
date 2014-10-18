@@ -29,18 +29,18 @@ func TestSecrets(t *testing.T) {
 		t.Fatalf("error: %v", err)
 	}
 
-	c := common.Conf{
-		SharedSecret: sec,
-	}
-	_, err = NewFromConf(&c)
+	c := common.NewConf()
+	c.SharedSecret = sec
+
+	_, err = NewFromConf(c)
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
 
-	c = common.Conf{
-		SharedSecret: "aa" + sec,
-	}
-	_, err = NewFromConf(&c)
+	c = common.NewConf()
+	c.SharedSecret = "aa" + sec[2:]
+
+	_, err = NewFromConf(c)
 	if err == nil {
 		t.Fatal("expected error from corrupted secret")
 	}

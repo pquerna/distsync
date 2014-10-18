@@ -22,7 +22,7 @@ import (
 )
 
 func TestConf(t *testing.T) {
-	c := Conf{}
+	c := NewConf()
 	str, _ := c.ToString()
 	println(str)
 }

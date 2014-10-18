@@ -25,17 +25,28 @@ import (
 )
 
 type Conf struct {
-	SharedSecret   string
-	EncryptBackend string
-	NotifyBackend  string
-	UploadBackend  string
-	AwsCreds       AwsCreds
+	SharedSecret string
+	Encrypt      string
+	Notify       string
+	Storage      string
+	AwsCreds     AwsCreds
 }
 
 type AwsCreds struct {
 	Region    string
 	AccessKey string
 	SecretKey string
+}
+
+func NewConf() *Conf {
+	return &Conf{
+		Encrypt: "AEAD_AES_128_CBC_HMAC_SHA_256",
+		Notify:  "S3Poll",
+		Storage: "S3",
+		AwsCreds: AwsCreds{
+			Region: "us-east-1",
+		},
+	}
 }
 
 func ConfFromFile(file string) (*Conf, error) {
@@ -45,11 +56,14 @@ func ConfFromFile(file string) (*Conf, error) {
 		return nil, err
 	}
 
-	c := Conf{}
+	c := NewConf()
 
-	toml.Decode(string(data), &c)
+	_, err = toml.Decode(string(data), c)
+	if err != nil {
+		return nil, err
+	}
 
-	return &c, nil
+	return c, nil
 }
 
 func (c *Conf) ToString() (string, error) {
