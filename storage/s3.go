@@ -20,9 +20,11 @@ import (
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
 	"github.com/pquerna/distsync/common"
+	"github.com/pquerna/distsync/crypto"
 
 	"errors"
 	"io"
+	"strings"
 )
 
 type S3Storage struct {
@@ -56,7 +58,16 @@ func (s *S3Storage) client() (*s3.S3, error) {
 
 var dsyncCt = "application/distsync-encrypted"
 
+// Uploads to S3, and touches .distsync on success.
+// which `notify.S3Poller` uses to find changes.
 func (s *S3Storage) Upload(filename string, reader io.ReadSeeker) error {
+	// just a random string taht will change the etag of .distsync,
+	// so that `notify.S3Poller` look for new files.
+	tsec, err := crypto.RandomSecret()
+	if err != nil {
+		return err
+	}
+
 	l, err := reader.Seek(2, 0)
 
 	if err != nil {
@@ -77,6 +88,12 @@ func (s *S3Storage) Upload(filename string, reader io.ReadSeeker) error {
 	bucket := client.Bucket(s.bucket)
 
 	err = bucket.PutReader(filename, reader, l, dsyncCt, "")
+	if err != nil {
+		return err
+	}
+
+	sr := strings.NewReader(tsec)
+	err = bucket.PutReader(".distsync", sr, int64(sr.Len()), "text/plain", "")
 	if err != nil {
 		return err
 	}

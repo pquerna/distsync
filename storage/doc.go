@@ -61,12 +61,6 @@ type SizeReader interface {
 	DistsyncSize() int64
 }
 
-// Uploads to S3, and touches .distsync on success,
-// which `notify.S3Poller` uses to find changes.
-//func NewS3Uploader(common.S3Conf) Uploader {
-//	return nil
-//}
-
 func NewFromConf(c *common.Conf) (Storage, error) {
 	switch strings.ToUpper(c.Storage) {
 	case "S3":
