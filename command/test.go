@@ -20,7 +20,7 @@ package command
 import (
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
-	"github.com/pquerna/distsync/encrypt"
+	"github.com/pquerna/distsync/crypto"
 
 	"flag"
 	"io/ioutil"
@@ -98,7 +98,7 @@ func (c *TestCrypt) Run(args []string) int {
 
 	dname := filepath.Dir(fpath)
 
-	ec, err := encrypt.NewEtmCryptor([]byte("hellohelloworld1hellohelloworld1"))
+	ec, err := crypto.NewEtmCryptor([]byte("hellohelloworld1hellohelloworld1"))
 	if err != nil {
 		c.Ui.Error("Error: " + err.Error())
 		c.Ui.Error("")
