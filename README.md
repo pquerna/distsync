@@ -36,7 +36,7 @@ _Rackspace Cloud Support_: Waiting on v0.2 rewrite of the [Gophercloud SDK](http
 
 ## Configuration File Reference
 
-The configuration file is in [TOML](https://github.com/toml-lang/toml) syntax.  When invoked as `distsync daeomn`, `~/.distsyncd` is read by default. For all other invocations, `~/.distsync` is read by default. All commands also take `-c` to specify the path to the configuration file.
+The configuration file is in [TOML](https://github.com/toml-lang/toml) syntax.  When invoked as `distsync daeomn`, `~/.distsyncd` is read by default. For all other invocations, `~/.distsync` is read by default. All commands also take a `-c path/to/conf` argument to specify the path to the configuration file.
 
 ### Example
 
