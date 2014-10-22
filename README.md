@@ -156,5 +156,5 @@ __Details__: Secret Key to use with AWS.
 
 # License
 
-`distsync` is licensed under the (Apache Software License 2.0)[./LICENSE]
+`distsync` was created by [Paul Querna](http://paul.querna.org/) is licensed under the [Apache Software License 2.0](./LICENSE)
 
