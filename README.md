@@ -2,17 +2,17 @@
 
 # distsync: sync files from object stores to your servers.
 
-`distsync` is the best damn way to distribute tarballs from your CI to many servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing) is not intended for __personal__ use, all options are optimized for server use.
+`distsync` is the best damn way to distribute tarballs from your CI to many servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing) is not intended for _personal_ use, all options are optimized for server use.
 
 This means distsync is only optimized to move your application tarball or docker export from your CI, to a group of servers, using public cloud object stores as it's primary storage backend.  It can optionally use BitTorrent to accelerate delivery and reduce S3 costs.
 
 ## Features
 
-* _Simple_: Single command to upload from CI, easy daemon mode for servers.
-* _Encrypted_: [AEAD Encryption](https://github.com/codahale/etm) of both file contents and file names.
-* _Multi-Cloud_: Supports both AWS S3 and Rackspace Cloud Files as storage backends.
-* _BitTorrent_: AWS S3 can optionally use BitTorrent to increase speed and reduce transfer costs.
-* _Pluggable_: Contributions Welcome. New storage, encryption, and transfer plugins are welcome.
+* __Simple__: Single command to upload from CI, easy daemon mode for servers.
+* __Encrypted__: [AEAD Encryption](https://github.com/codahale/etm) of both file contents and file names.
+* __Multi-Cloud__: Supports both AWS S3 and Rackspace Cloud Files as storage backends.
+* __BitTorrent__: AWS S3 can optionally use BitTorrent to increase speed and reduce transfer costs.
+* __Pluggable__: Contributions Welcome: New storage, encryption, and transfer plugins are welcome.
 
 ## Usage
 
