@@ -53,3 +53,92 @@ Storage = "S3"
   AccessKey = "<access-key here>"
   SecretKey = "<secret-key here>"
 ```
+
+### Reference
+
+
+#### SharedSecret
+
+__Default Value__: None
+__Type__: String
+__Details__: A base64 encoded shared secret used to encrypt and HMAC all objects.
+
+
+
+#### StorageBucket
+
+__Default Value__: None
+__Type__: String
+__Details__: Name of the bucket to use in the storage backend.
+
+
+#### Encrypt
+
+__Default Value__: AEAD_AES_128_CBC_HMAC_SHA_256
+__Type__: Enum String
+__Details__: Type of encryption and HMAC to use on objects. Must be one of:
+
+* AEAD_AES_128_CBC_HMAC_SHA_256
+
+
+#### Notify
+
+__Default Value__: S3Poll
+__Type__: Enum String
+__Details__: Method to detect new files are available. Must be one of:
+
+* S3Poll
+
+
+#### Storage
+
+__Default Value__: S3
+__Type__: Enum String
+__Details__: Storage backend used to upload and download files. Must be one of:
+
+* S3
+* S3+BitTorrent
+
+
+#### Section: AwsCreds
+
+Credentials to use against AWS.  The user associated with these credentials should be setup with [AWS IAM](http://aws.amazon.com/iam/) to have limited privileges.
+
+TODO: Document IAM policy that is created with `distsync setup`
+
+#### AwsCreds.Region
+
+__Default Value__: us-east-1
+__Type__: Enum String
+__Details__: Region to use.  Must be one of:
+
+* ap-northeast-1
+* ap-southeast-1
+* ap-southeast-2
+* cn-north-1
+* eu-west-1
+* sa-east-1
+* us-east-1
+* us-gov-west-1
+* us-west-1
+* us-west-2
+
+
+#### AwsCreds.AccessKey
+
+__Default Value__: None
+__Type__: String
+__Details__: Access Key to use with AWS.
+
+
+#### AwsCreds.SecretKey
+
+__Default Value__: None
+__Type__: String
+__Details__: Secret Key to use with AWS.
+
+
+# License
+
+`distsync` is licensed under the (Apache Software License 2.0)[./LICENSE]
+
