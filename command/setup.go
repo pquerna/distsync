@@ -125,6 +125,7 @@ func s3policy(name string) (string, error) {
 		Statement: []IAMStatement{
 			IAMStatement{
 				Effect: "Allow",
+				// TODO: improve this policy.
 				Action: []string{
 					"s3:*",
 				},

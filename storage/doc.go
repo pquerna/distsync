@@ -15,7 +15,7 @@
  *
  */
 
-package upload
+package storage
 
 import (
 	"github.com/pquerna/distsync/common"
@@ -30,8 +30,27 @@ type Uploader interface {
 	Upload(filename string, reader io.Reader) error
 }
 
+type Downloader interface {
+	// Downloads remote filename to io.Writer.
+	Download(filename string, reader io.Writer) error
+}
+
+// TODO: hash of file? Other attributes?
+type FileInfo struct {
+	Name string
+}
+
+type Lister interface {
+	// Returns a list of available files to download.
+	List() []FileInfo
+}
+
 // Uploads to S3, and touches .distsync on success,
 // which `notify.S3Poller` uses to find changes.
-func NewS3Uploader(common.S3Conf) Uploader {
-	return nil
+//func NewS3Uploader(common.S3Conf) Uploader {
+//	return nil
+//}
+
+func NewUploaderFromConf(c *common.Conf) (Uploader, error) {
+	return nil, nil
 }

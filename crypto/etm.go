@@ -104,11 +104,12 @@ var v1maxChunkSize = uint32(v1chunkSize * 10)
 //
 // Header: 10 bytes for version and cipher identification.
 //		"distsync01": v1, AEAD_AES_128_CBC_HMAC_SHA_256.
-//		mac []byte: 32 byte HMAC of file contents.
-//
-// Data block:
+// Data block(s):
 // 		4-bytes chunk size. (PutUint32)
-// 		AEAD encrypted data.
+// 		AEAD encrypted data. (up to `v1maxChunkSize`)
+// Trailing hash block:
+// 		0 byte data block, followed by:
+//		mac []byte: 32 byte HMAC of file's contents.
 func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 	buf := make([]byte, v1chunkSize)
 	nonce := make([]byte, e.c.NonceSize())

@@ -19,6 +19,7 @@ package common
 
 import (
 	"github.com/BurntSushi/toml"
+	"github.com/mitchellh/go-homedir"
 
 	"bytes"
 	"io/ioutil"
@@ -50,6 +51,10 @@ func NewConf() *Conf {
 }
 
 func ConfFromFile(file string) (*Conf, error) {
+	file, err := homedir.Expand(file)
+	if err != nil {
+		return nil, err
+	}
 
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
