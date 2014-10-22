@@ -141,7 +141,7 @@ func (c *Upload) _uploadFile(filename string) error {
 		return &stopError{}
 	}
 
-	up, err := storage.NewUploaderFromConf(c.conf)
+	s, err := storage.NewFromConf(c.conf)
 	if err != nil {
 		return err
 	}
@@ -149,8 +149,8 @@ func (c *Upload) _uploadFile(filename string) error {
 		return &stopError{}
 	}
 
-	// TODO: cancellation of upload?
-	err = up.Upload(shortName, tmpFile)
+	// TODO: channel for cancellation of upload?
+	err = s.Upload(shortName, tmpFile)
 	if err != nil {
 		return err
 	}

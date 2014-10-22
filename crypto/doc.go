@@ -22,6 +22,7 @@ import (
 
 	"errors"
 	"io"
+	"strings"
 )
 
 type Encryptor interface {
@@ -47,7 +48,7 @@ func NewFromConf(c *common.Conf) (Cryptor, error) {
 		return nil, err
 	}
 
-	switch c.Encrypt {
+	switch strings.ToUpper(c.Encrypt) {
 	case "AEAD_AES_128_CBC_HMAC_SHA_256":
 		return NewEtmCryptor(secret)
 	}

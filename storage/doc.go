@@ -20,14 +20,17 @@ package storage
 import (
 	"github.com/pquerna/distsync/common"
 
+	"errors"
 	"io"
+	"strings"
 )
 
-// A notifier provides a channel for when
-// the Manifest has changed.
 type Uploader interface {
 	// Upload with this remote filename.
-	Upload(filename string, reader io.Reader) error
+	// See https://code.google.com/p/go/issues/detail?id=6738 for discussion
+	// of sized / length'ed readers -- this uses .Seek to calcualte
+	// the file size.
+	Upload(filename string, reader io.ReadSeeker) error
 }
 
 type Downloader interface {
@@ -42,7 +45,20 @@ type FileInfo struct {
 
 type Lister interface {
 	// Returns a list of available files to download.
-	List() []FileInfo
+	List() ([]FileInfo, error)
+}
+
+type Storage interface {
+	Uploader
+	Downloader
+	Lister
+}
+
+type SizeReader interface {
+	io.Reader
+	// returns remaining bytes.
+	// TODO: should this just be Size() or Len()?
+	DistsyncSize() int64
 }
 
 // Uploads to S3, and touches .distsync on success,
@@ -51,6 +67,11 @@ type Lister interface {
 //	return nil
 //}
 
-func NewUploaderFromConf(c *common.Conf) (Uploader, error) {
-	return nil, nil
+func NewFromConf(c *common.Conf) (Storage, error) {
+	switch strings.ToUpper(c.Storage) {
+	case "S3":
+		return NewS3(&c.AwsCreds, c.StorageBucket)
+	}
+
+	return nil, errors.New("Unknown storage backend: " + c.Storage)
 }

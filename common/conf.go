@@ -26,11 +26,12 @@ import (
 )
 
 type Conf struct {
-	SharedSecret string
-	Encrypt      string
-	Notify       string
-	Storage      string
-	AwsCreds     AwsCreds
+	SharedSecret  string
+	StorageBucket string
+	Encrypt       string
+	Notify        string
+	Storage       string
+	AwsCreds      AwsCreds
 }
 
 type AwsCreds struct {
