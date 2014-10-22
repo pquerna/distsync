@@ -1,8 +1,8 @@
 # STATUS: WIP. ETA 3 days. DEAL WITH IT.
 
-# distsync: sync files from object stores to your servers.
+# distsync
 
-`distsync` is the best damn way to distribute tarballs from your CI to many servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing) is not intended for _personal_ use, all options are optimized for server use.
+`distsync` is the best damn way to distribute tarballs from your build infrastructure to production servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing) is not intended for _personal_ use, instead all options and design choices are optimized for server use.
 
 This means distsync is only optimized to move your application tarball or docker export from your CI, to a group of servers, using public cloud object stores as it's primary storage backend.  It can optionally use BitTorrent to accelerate delivery and reduce S3 costs.
 
