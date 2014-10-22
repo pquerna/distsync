@@ -60,22 +60,28 @@ Storage = "S3"
 #### SharedSecret
 
 __Default Value__: None
+
 __Type__: String
-__Details__: A base64 encoded shared secret used to encrypt and HMAC all objects.
+
+__Details__: A base64 encoded shared secret used to encrypt and HMAC all objects.  Generally created by `distsync setup`.
 
 
 
 #### StorageBucket
 
 __Default Value__: None
+
 __Type__: String
+
 __Details__: Name of the bucket to use in the storage backend.
 
 
 #### Encrypt
 
 __Default Value__: AEAD_AES_128_CBC_HMAC_SHA_256
+
 __Type__: Enum String
+
 __Details__: Type of encryption and HMAC to use on objects. Must be one of:
 
 * AEAD_AES_128_CBC_HMAC_SHA_256
@@ -84,7 +90,9 @@ __Details__: Type of encryption and HMAC to use on objects. Must be one of:
 #### Notify
 
 __Default Value__: S3Poll
+
 __Type__: Enum String
+
 __Details__: Method to detect new files are available. Must be one of:
 
 * S3Poll
@@ -93,7 +101,9 @@ __Details__: Method to detect new files are available. Must be one of:
 #### Storage
 
 __Default Value__: S3
+
 __Type__: Enum String
+
 __Details__: Storage backend used to upload and download files. Must be one of:
 
 * S3
@@ -109,7 +119,9 @@ TODO: Document IAM policy that is created with `distsync setup`
 #### AwsCreds.Region
 
 __Default Value__: us-east-1
+
 __Type__: Enum String
+
 __Details__: Region to use.  Must be one of:
 
 * ap-northeast-1
@@ -127,14 +139,18 @@ __Details__: Region to use.  Must be one of:
 #### AwsCreds.AccessKey
 
 __Default Value__: None
+
 __Type__: String
+
 __Details__: Access Key to use with AWS.
 
 
 #### AwsCreds.SecretKey
 
 __Default Value__: None
+
 __Type__: String
+
 __Details__: Secret Key to use with AWS.
 
 
