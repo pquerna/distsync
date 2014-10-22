@@ -19,6 +19,7 @@ package encrypt
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
@@ -100,7 +101,7 @@ func TestEtmName(t *testing.T) {
 		t.Fatalf("error: expected decrypted name of %s, but got %s", fname, fname2)
 	}
 
-	tampered := s + "b"
+	tampered := strings.ToUpper(s)
 
 	fname2, err = ec.DecryptName(tampered)
 	if err == nil {
