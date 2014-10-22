@@ -68,7 +68,7 @@ func (s *S3Storage) Upload(filename string, reader io.ReadSeeker) error {
 		return err
 	}
 
-	l, err := reader.Seek(2, 0)
+	l, err := reader.Seek(0, 2)
 
 	if err != nil {
 		return err

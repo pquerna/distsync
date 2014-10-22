@@ -24,6 +24,7 @@ import (
 	"github.com/mitchellh/goamz/iam"
 	"github.com/mitchellh/goamz/s3"
 	"github.com/pquerna/distsync/common"
+	"github.com/pquerna/distsync/crypto"
 
 	"encoding/json"
 	"flag"
@@ -130,8 +131,8 @@ func s3policy(name string) (string, error) {
 					"s3:*",
 				},
 				Resource: []string{
-					"arn:aws:s3:::\"" + name + "\"",
-					"arn:aws:s3:::\"" + name + "/*\"",
+					"arn:aws:s3:::" + name + "",
+					"arn:aws:s3:::" + name + "/*",
 				},
 			},
 		},
@@ -161,6 +162,13 @@ func (c *Setup) Run(args []string) int {
 		return 1
 	}
 
+	sharedSecret, err := crypto.RandomSecret()
+	if err != nil {
+		c.Ui.Error("Error: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
 	auth, err := c.getAuth()
 	if err != nil {
 		c.Ui.Error("Error: " + err.Error())
@@ -175,11 +183,11 @@ func (c *Setup) Run(args []string) int {
 		return 1
 	}
 
-	name := "distsync-" + uuid.NewRandom().String()
+	bucketName := "distsync-" + uuid.NewRandom().String()
 
 	s3Client := s3.New(auth, region)
 
-	bucket := s3Client.Bucket(name)
+	bucket := s3Client.Bucket(bucketName)
 	err = bucket.PutBucket("public-read")
 	if err != nil {
 		c.Ui.Error("S3 error on bucket creation: " + err.Error())
@@ -188,7 +196,7 @@ func (c *Setup) Run(args []string) int {
 	}
 
 	iamClient := iam.New(auth, region)
-	_, err = iamClient.CreateUser(name, "/")
+	_, err = iamClient.CreateUser(bucketName, "/")
 	//	user := userResp.User
 	if err != nil {
 		c.Ui.Error("IAM Error on CreateUser: " + err.Error())
@@ -196,37 +204,38 @@ func (c *Setup) Run(args []string) int {
 		return 1
 	}
 
-	policy, err := s3policy(name)
+	policy, err := s3policy(bucketName)
 	if err != nil {
 		c.Ui.Error("Policy Template error: " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
 
-	_, err = iamClient.PutUserPolicy(name, "distsync-uploader", policy)
+	_, err = iamClient.PutUserPolicy(bucketName, "distsync-uploader", policy)
 	if err != nil {
 		c.Ui.Error("IAM Error on PutUserPolicy: " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
 
-	ak, err := iamClient.CreateAccessKey(name)
+	ak, err := iamClient.CreateAccessKey(bucketName)
 	if err != nil {
 		c.Ui.Error("IAM Error on CreateAccessKey: " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
 
-	println(ak.AccessKey.Id)
-	println(ak.AccessKey.Secret)
+	conf := common.NewConf()
+	conf.SharedSecret = sharedSecret
+	conf.StorageBucket = bucketName
+	conf.AwsCreds.Region = region.Name
+	conf.AwsCreds.AccessKey = ak.AccessKey.Id
+	conf.AwsCreds.SecretKey = ak.AccessKey.Secret
 
-	//
-	// encryption backend
-	// storage backend
-	// notification backend
-	_, err = common.Choice(c.Ui, "Fav cat?", []string{"garfield", "bob", "Moo"})
+	cstr, err := conf.ToString()
+	println(cstr)
 	if err != nil {
-		c.Ui.Error("Error: " + err.Error())
+		c.Ui.Error("Error on creating conf :( " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
