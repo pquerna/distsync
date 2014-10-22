@@ -10,9 +10,12 @@ This means distsync is only optimized to move your application tarball or docker
 
 * __Simple__: Single command to upload from CI, easy daemon mode for servers.
 * __Encrypted__: [AEAD Encryption](https://github.com/codahale/etm) of both file contents and file names.
-* __Multi-Cloud__: Supports both AWS S3 and Rackspace Cloud Files as storage backends.
+* __Multi-Cloud__: Supports both AWS S3 and ~~Rackspace Cloud Files~~ as storage backends.
 * __BitTorrent__: AWS S3 can optionally use BitTorrent to increase speed and reduce transfer costs.
 * __Pluggable__: Contributions Welcome: New storage, encryption, and transfer plugins are welcome.
+
+
+_Rackspace Cloud Support_: Waiting on v0.2 rewrite of the [Gophercloud SDK](https://github.com/rackspace/gophercloud) to add support for Rackspace Identity and Rackspace Cloud Files as backends.
 
 ## Usage
 
