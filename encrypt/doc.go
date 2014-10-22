@@ -25,10 +25,12 @@ import (
 )
 
 type Encryptor interface {
+	EncryptName(name string) (string, error)
 	Encrypt(io.Reader, io.Writer) error
 }
 
 type Decryptor interface {
+	DecryptName(name string) (string, error)
 	Decrypt(io.Reader, io.Writer) error
 }
 

@@ -25,6 +25,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -46,6 +47,50 @@ func NewEtmCryptor(secret []byte) (Cryptor, error) {
 		secret: secret,
 		c:      e,
 	}, nil
+}
+
+var v1NameHeader = []byte("d0")
+
+func (e *EtmCryptor) EncryptName(clearName string) (string, error) {
+	clearBuf := []byte(clearName)
+	nonce := make([]byte, e.c.NonceSize())
+	enbuf := make([]byte, 0, len(clearName)+e.c.Overhead()+2)
+
+	_, err := rand.Read(nonce)
+	if err != nil {
+		return "", err
+	}
+
+	enbuf = append(enbuf, v1NameHeader...)
+
+	enbuf = e.c.Seal(enbuf, nonce, clearBuf, []byte{})
+
+	return base64.URLEncoding.EncodeToString(enbuf), nil
+}
+
+func (e *EtmCryptor) DecryptName(enName string) (string, error) {
+	buf, err := base64.URLEncoding.DecodeString(enName)
+	if err != nil {
+		return "", err
+	}
+
+	if len(buf) < 2+e.c.Overhead() {
+		return "", errors.New("DecryptName: name is too short")
+	}
+
+	if bytes.Compare(v1NameHeader, buf[0:2]) != 0 {
+		return "", errors.New("DecryptName: Unknown header.")
+	}
+
+	clearbuf := make([]byte, 0, len(buf))
+
+	clearbuf, err = e.c.Open(clearbuf, nil, buf[2:], []byte{})
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(clearbuf[:]), nil
 }
 
 var v1header = []byte("distsync01")

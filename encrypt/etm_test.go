@@ -77,3 +77,33 @@ func TestTampered(t *testing.T) {
 	t.Fatalf("Missing error from tampered data: enreader:%v", enreader)
 
 }
+
+func TestEtmName(t *testing.T) {
+	ec, err := NewEtmCryptor([]byte("hellohelloworld1hellohelloworld1"))
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	fname := "hello-world-1.2.3.4.tar.gz"
+
+	s, err := ec.EncryptName(fname)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	fname2, err := ec.DecryptName(s)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	if fname != fname2 {
+		t.Fatalf("error: expected decrypted name of %s, but got %s", fname, fname2)
+	}
+
+	tampered := s + "b"
+
+	fname2, err = ec.DecryptName(tampered)
+	if err == nil {
+		t.Fatalf("expected error due to tampering, didn't get one.")
+	}
+}
