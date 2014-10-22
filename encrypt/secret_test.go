@@ -23,7 +23,7 @@ import (
 	"testing"
 )
 
-func TestSecrets(t *testing.T) {
+func TestSecretFromConf(t *testing.T) {
 	sec, err := RandomSecret()
 	if err != nil {
 		t.Fatalf("error: %v", err)

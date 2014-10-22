@@ -35,8 +35,7 @@ type EtmCryptor struct {
 	c      cipher.AEAD
 }
 
-// TODO: make streaming :*(
-// 32-byte key
+// 32-byte secret
 func NewEtmCryptor(secret []byte) (Cryptor, error) {
 	e, err := etm.NewAES128SHA256(secret)
 	if err != nil {

@@ -20,6 +20,7 @@ package encrypt
 import (
 	"github.com/pquerna/distsync/common"
 
+	"errors"
 	"io"
 )
 
@@ -37,9 +38,17 @@ type Cryptor interface {
 }
 
 func NewFromConf(c *common.Conf) (Cryptor, error) {
-	secret, err := decodeSecret(c.SharedSecret)
+	// currently etm use a 32 byte secret.
+	// TODO: better abstraction / interface.
+	secret, err := decodeSecret(c.SharedSecret, 32)
 	if err != nil {
 		return nil, err
 	}
-	return NewEtmCryptor(secret)
+
+	switch c.Encrypt {
+	case "AEAD_AES_128_CBC_HMAC_SHA_256":
+		return NewEtmCryptor(secret)
+	}
+
+	return nil, errors.New("Unknown crypto backend: " + c.Encrypt)
 }

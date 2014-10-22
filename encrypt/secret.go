@@ -40,8 +40,8 @@ func RandomSecret() (string, error) {
 	return hex.EncodeToString(append(buf, crcbuf...)), nil
 }
 
-func decodeSecret(secin string) ([]byte, error) {
-	if len(secin) != hex.EncodedLen(36) {
+func decodeSecret(secin string, seclen int) ([]byte, error) {
+	if len(secin) != hex.EncodedLen(seclen+4) {
 		return nil, errors.New("Invalid shared secret, length is wrong?")
 	}
 
@@ -50,13 +50,13 @@ func decodeSecret(secin string) ([]byte, error) {
 		return nil, err
 	}
 
-	crca := crc32.ChecksumIEEE(buf[:32])
+	crca := crc32.ChecksumIEEE(buf[:seclen])
 
-	crcb := binary.BigEndian.Uint32(buf[32:])
+	crcb := binary.BigEndian.Uint32(buf[seclen:])
 
 	if crca != crcb {
 		return nil, errors.New("SharedSecret failed CRC check.")
 	}
 
-	return buf[:32], nil
+	return buf[:seclen], nil
 }
