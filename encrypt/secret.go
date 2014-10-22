@@ -19,8 +19,8 @@ package encrypt
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"hash/crc32"
 )
@@ -37,15 +37,15 @@ func RandomSecret() (string, error) {
 
 	binary.BigEndian.PutUint32(crcbuf, crc)
 
-	return hex.EncodeToString(append(buf, crcbuf...)), nil
+	return base64.URLEncoding.EncodeToString(append(buf, crcbuf...)), nil
 }
 
 func decodeSecret(secin string, seclen int) ([]byte, error) {
-	if len(secin) != hex.EncodedLen(seclen+4) {
+	if len(secin) != base64.URLEncoding.EncodedLen(seclen+4) {
 		return nil, errors.New("Invalid shared secret, length is wrong?")
 	}
 
-	buf, err := hex.DecodeString(secin)
+	buf, err := base64.URLEncoding.DecodeString(secin)
 	if err != nil {
 		return nil, err
 	}
