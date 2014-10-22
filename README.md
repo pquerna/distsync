@@ -2,9 +2,9 @@
 
 # distsync: sync files from object stores to your servers.
 
-`distsync` makes synchronizing files from an object store like S3 to your servers very easy. It is not intended for __personal__ use, instead it is the best damn way to sync tarballs to servers.
+`distsync` is the best damn way to distribute tarballs from your CI to many servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing) is not intended for __personal__ use, all options are optimized for server use.
 
-This means distsync is only optimized to move your application tarball or docker export from your CI, to a group of servers.  It can optionally use BitTorrent to accelerate delivery and reduce S3 costs.  
+This means distsync is only optimized to move your application tarball or docker export from your CI, to a group of servers, using public cloud object stores as it's primary storage backend.  It can optionally use BitTorrent to accelerate delivery and reduce S3 costs.
 
 ## Features
 
