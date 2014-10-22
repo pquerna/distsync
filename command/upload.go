@@ -149,8 +149,19 @@ func (c *Upload) _uploadFile(filename string) error {
 		return &stopError{}
 	}
 
+	enName, err := ec.EncryptName(shortName)
+	if err != nil {
+		return err
+	}
+	if c.stop != nil {
+		return &stopError{}
+	}
+
+	// TOOD: lock? bleh
+	c.Ui.Info("Uploading " + shortName + " -> " + enName)
+
 	// TODO: channel for cancellation of upload?
-	err = s.Upload(shortName, tmpFile)
+	err = s.Upload(enName, tmpFile)
 	if err != nil {
 		return err
 	}
@@ -188,7 +199,7 @@ func (c *Upload) Run(args []string) int {
 	var wg sync.WaitGroup
 
 	for _, file := range files {
-		c.Ui.Info("Uploading " + file)
+		c.Ui.Info("Encrypting " + file)
 
 		wg.Add(1)
 		go c.uploadFile(&wg, file)
