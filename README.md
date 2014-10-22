@@ -16,12 +16,9 @@ This means distsync is only optimized to move your application tarball or docker
 
 ## Usage
 
-1. distsync setup
-	Answer propmts
-	Creates ~/.distsync
-	Creates ~/.distsyncd
-1. Copy ~/.distsync to your uploader (eg, Jenkins).
-1. Copy ~/.distsyncd to your servers.
+1. `distsync setup` Answer the propmts, it will create a `~/.distsync` and `~/.distsyncd`.
+1. Copy `~/.distsync` to your uploader (eg, Jenkins).
+1. Copy `~/.distsyncd` to your servers.
 1. Run `distsync daemon` on servers.
 1. `distsync upload foo.tar.gz` on your uploader.
 1. Voilà! Your files are now on all your servers.
