@@ -74,10 +74,6 @@ func (e *EtmCryptor) DecryptName(enName string) (string, error) {
 		return "", err
 	}
 
-	if len(buf) < 2+e.c.Overhead() {
-		return "", errors.New("DecryptName: name is too short")
-	}
-
 	if bytes.Compare(v1NameHeader, buf[0:2]) != 0 {
 		return "", errors.New("DecryptName: Unknown header.")
 	}

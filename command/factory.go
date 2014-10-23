@@ -23,6 +23,11 @@ import (
 
 func Factory(ui cli.Ui) map[string]cli.CommandFactory {
 	x := map[string]cli.CommandFactory{
+		"download": func() (cli.Command, error) {
+			return &Download{
+				Ui: ui,
+			}, nil
+		},
 		"upload": func() (cli.Command, error) {
 			return &Upload{
 				Ui: ui,

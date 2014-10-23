@@ -14,6 +14,7 @@
  *  limitations under the License.
  *
  */
+
 package storage
 
 import (
@@ -101,10 +102,45 @@ func (s *S3Storage) Upload(filename string, reader io.ReadSeeker) error {
 	return nil
 }
 
-func (s *S3Storage) Download(filename string, reader io.Writer) error {
+func (s *S3Storage) Download(filename string, writer io.Writer) error {
+	client, err := s.client()
+	if err != nil {
+		return err
+	}
+
+	bucket := client.Bucket(s.bucket)
+
+	r, err := bucket.GetReader(filename)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(writer, r)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (s *S3Storage) List() ([]FileInfo, error) {
-	return nil, nil
+	client, err := s.client()
+	if err != nil {
+		return nil, err
+	}
+
+	bucket := client.Bucket(s.bucket)
+
+	contents, err := bucket.GetBucketContents()
+	if err != nil {
+		return nil, err
+	}
+
+	rv := make([]FileInfo, 0, len(*contents))
+	for _, key := range *contents {
+		rv = append(rv, FileInfo{
+			EncryptedName: key.Key,
+			LastModified:  key.LastModified,
+		})
+	}
+	return rv, nil
 }

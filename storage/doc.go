@@ -40,7 +40,10 @@ type Downloader interface {
 
 // TODO: hash of file? Other attributes?
 type FileInfo struct {
-	Name string
+	EncryptedName string
+	Name          string
+	// TODO: LastModified -> non-string
+	LastModified string
 }
 
 type Lister interface {
