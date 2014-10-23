@@ -26,6 +26,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"time"
 )
 
 type S3Storage struct {
@@ -137,10 +138,16 @@ func (s *S3Storage) List() ([]FileInfo, error) {
 
 	rv := make([]FileInfo, 0, len(*contents))
 	for _, key := range *contents {
+		lm, err := time.Parse(time.RFC3339Nano, key.LastModified)
+		if err != nil {
+			return nil, err
+		}
+
 		rv = append(rv, FileInfo{
 			EncryptedName: key.Key,
-			LastModified:  key.LastModified,
+			LastModified:  lm,
 		})
 	}
+
 	return rv, nil
 }

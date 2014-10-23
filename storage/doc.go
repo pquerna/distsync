@@ -23,6 +23,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"time"
 )
 
 type Uploader interface {
@@ -42,8 +43,7 @@ type Downloader interface {
 type FileInfo struct {
 	EncryptedName string
 	Name          string
-	// TODO: LastModified -> non-string
-	LastModified string
+	LastModified  time.Time
 }
 
 type Lister interface {
