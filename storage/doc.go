@@ -68,6 +68,23 @@ func NewFromConf(c *common.Conf) (Storage, error) {
 	switch strings.ToUpper(c.Storage) {
 	case "S3":
 		return NewS3(&c.AwsCreds, c.StorageBucket)
+	case "S3+BitTorrent":
+		return NewS3(&c.AwsCreds, c.StorageBucket)
+	}
+
+	return nil, errors.New("Unknown storage backend: " + c.Storage)
+}
+
+type PersistentDownloader interface {
+	Downloader
+	Start() error
+	Stop() error
+}
+
+func NewPersistentDownloader(c *common.Conf) (PersistentDownloader, error) {
+	switch strings.ToUpper(c.Storage) {
+	case "S3+BitTorrent":
+		return NewTorrentDownloader(c)
 	}
 
 	return nil, errors.New("Unknown storage backend: " + c.Storage)
