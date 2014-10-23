@@ -234,6 +234,11 @@ func (c *Download) _downloadFile(fi storage.FileInfo) error {
 		return err
 	}
 
+	err = os.Chtimes(fi.Name, fi.LastModified, fi.LastModified)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
