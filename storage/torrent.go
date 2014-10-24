@@ -24,6 +24,7 @@ import (
 	"github.com/pquerna/distsync/common"
 	"github.com/pquerna/distsync/crypto"
 
+	"encoding/hex"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -44,6 +45,7 @@ type TorrentDownloader struct {
 	torrentFlags torrent.TorrentFlags
 	torrents     map[string]*torrent.TorrentSession
 	torrentConns chan *torrent.BtConn
+	doneChan     chan *torrent.TorrentSession
 }
 
 func NewTorrentDownloader(conf *common.Conf) (*TorrentDownloader, error) {
@@ -74,9 +76,12 @@ func NewTorrentDownloader(conf *common.Conf) (*TorrentDownloader, error) {
 			Port:    6881,
 			FileDir: tdir,
 			// TODO: patch Taipei to support 'seed forever' mode.
-			SeedRatio: 9000.0,
+			SeedRatio: 0.0,
 			// TODO: configuration options for NAT/UPNP/etc
 		},
+		torrents:     make(map[string]*torrent.TorrentSession),
+		doneChan:     make(chan *torrent.TorrentSession),
+		torrentConns: make(chan *torrent.BtConn),
 	}, nil
 }
 
@@ -116,6 +121,38 @@ func (td *TorrentDownloader) Download(filename string, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
+
+	clearName, err := td.torrentNameToClear(destname)
+	if err != nil {
+		return err
+	}
+
+	ts, err := torrent.NewTorrentSession(
+		&td.torrentFlags,
+		destname,
+		uint16(td.torrentFlags.Port))
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":        err,
+			"torrent_file": destname,
+			"name":         clearName,
+		}).Error("Failed to load torrent")
+		return err
+	}
+
+	infoh := hex.EncodeToString([]byte(ts.M.InfoHash))
+
+	log.WithFields(log.Fields{
+		"infohash":     infoh,
+		"torrent_file": destname,
+		"name":         clearName,
+	}).Info("Starting torrent session")
+
+	// TODO: locking?
+	td.torrents[ts.M.InfoHash] = ts
+
+	ts.DoTorrent()
 
 	return errors.New("not implemented")
 }
@@ -194,7 +231,6 @@ func (td *TorrentDownloader) loadExistingTorrents() error {
 		}
 
 		log.WithFields(log.Fields{
-			"infohash":     ts.M.InfoHash,
 			"torrent_file": tf,
 			"name":         tname,
 		}).Info("Starting torrent session")
@@ -211,8 +247,9 @@ func (td *TorrentDownloader) mainLoop() {
 		select {
 
 		case c := <-td.torrentConns:
+			infoh := hex.EncodeToString([]byte(c.Infohash))
 			log.WithFields(log.Fields{
-				"infohash":     c.Infohash,
+				"infohash":     infoh,
 				"peer_address": c.RemoteAddr,
 			}).Info("New BitTorrent peer connection")
 
@@ -221,7 +258,7 @@ func (td *TorrentDownloader) mainLoop() {
 				ts.AcceptNewPeer(c)
 			} else {
 				log.WithFields(log.Fields{
-					"infohash":     c.Infohash,
+					"infohash":     infoh,
 					"peer_address": c.RemoteAddr.String(),
 				}).Warn("Peer connected regarding unknown torrent.")
 			}
