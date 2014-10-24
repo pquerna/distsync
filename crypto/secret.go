@@ -25,19 +25,29 @@ import (
 	"hash/crc32"
 )
 
-func RandomSecret() (string, error) {
-	crcbuf := make([]byte, 4)
-	buf := make([]byte, 32)
+func RandomThing(byteLength int, checksum bool) (string, error) {
+	buf := make([]byte, byteLength)
 	_, err := rand.Read(buf)
 	if err != nil {
 		return "", err
 	}
 
-	crc := crc32.ChecksumIEEE(buf)
+	if checksum {
+		crcbuf := make([]byte, 4)
 
-	binary.BigEndian.PutUint32(crcbuf, crc)
+		crc := crc32.ChecksumIEEE(buf)
 
-	return base64.URLEncoding.EncodeToString(append(buf, crcbuf...)), nil
+		binary.BigEndian.PutUint32(crcbuf, crc)
+
+		buf = append(buf, crcbuf...)
+	}
+
+	return base64.URLEncoding.EncodeToString(buf), nil
+
+}
+
+func RandomSecret() (string, error) {
+	return RandomThing(32, true)
 }
 
 func decodeSecret(secin string, seclen int) ([]byte, error) {
