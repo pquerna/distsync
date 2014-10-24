@@ -26,6 +26,8 @@ import (
 
 	"errors"
 	"io"
+	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -79,6 +81,42 @@ func NewTorrentDownloader(conf *common.Conf) (*TorrentDownloader, error) {
 }
 
 func (td *TorrentDownloader) Download(filename string, writer io.Writer) error {
+	err := os.MkdirAll(td.torrentDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	tmpTorrent, err := ioutil.TempFile(td.torrentDir, ".distsync-t")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		tmpTorrent.Close()
+		os.Remove(tmpTorrent.Name())
+	}()
+
+	tdl, ok := td.storage.(DownloadTorrenter)
+	if ok {
+		err = tdl.DownloadTorrent(filename, tmpTorrent)
+	} else {
+		// TODO: this isn't a real thing. hrm.
+		err = td.storage.Download(filename+".torrent", tmpTorrent)
+	}
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Failed to download .torrent file from origin.")
+		return err
+	}
+
+	destname := path.Join(td.torrentDir, filename+".torrent")
+
+	err = os.Rename(tmpTorrent.Name(), destname)
+	if err != nil {
+		return err
+	}
+
 	return errors.New("not implemented")
 }
 

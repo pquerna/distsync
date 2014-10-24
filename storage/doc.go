@@ -36,7 +36,11 @@ type Uploader interface {
 
 type Downloader interface {
 	// Downloads remote filename to io.Writer.
-	Download(filename string, reader io.Writer) error
+	Download(filename string, writer io.Writer) error
+}
+
+type DownloadTorrenter interface {
+	DownloadTorrent(filename string, writer io.Writer) error
 }
 
 // TODO: hash of file? Other attributes?
@@ -68,7 +72,7 @@ func NewFromConf(c *common.Conf) (Storage, error) {
 	switch strings.ToUpper(c.Storage) {
 	case "S3":
 		return NewS3(&c.AwsCreds, c.StorageBucket)
-	case "S3+BitTorrent":
+	case "S3+BITTORRENT":
 		return NewS3(&c.AwsCreds, c.StorageBucket)
 	}
 
@@ -83,7 +87,9 @@ type PersistentDownloader interface {
 
 func NewPersistentDownloader(c *common.Conf) (PersistentDownloader, error) {
 	switch strings.ToUpper(c.Storage) {
-	case "S3+BitTorrent":
+	case "S3":
+		return NewS3(&c.AwsCreds, c.StorageBucket)
+	case "S3+BITTORRENT":
 		return NewTorrentDownloader(c)
 	}
 

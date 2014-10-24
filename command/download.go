@@ -33,6 +33,7 @@ import (
 type Download struct {
 	Ui   cli.Ui
 	stop error
+	dl   storage.PersistentDownloader
 	conf *common.Conf
 }
 
@@ -78,7 +79,21 @@ func (c *Download) Run(args []string) int {
 
 	download, err := c.getFilesToDownload(files)
 	if err != nil {
-		c.Ui.Error("Getting files to download failed: " + err.Error())
+		c.Ui.Error("Error Getting files to download: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
+	c.dl, err = storage.NewPersistentDownloader(c.conf)
+	if err != nil {
+		c.Ui.Error("Error configuring download: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
+	err = c.dl.Start()
+	if err != nil {
+		c.Ui.Error("Error starting download: " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
@@ -161,14 +176,6 @@ func (c *Download) _downloadFile(fi storage.FileInfo) error {
 		return &stopError{}
 	}
 
-	s, err := storage.NewFromConf(c.conf)
-	if err != nil {
-		return err
-	}
-	if c.stop != nil {
-		return &stopError{}
-	}
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -192,7 +199,7 @@ func (c *Download) _downloadFile(fi storage.FileInfo) error {
 
 	c.Ui.Info("Downloading " + fi.EncryptedName + " -> " + fi.Name)
 
-	err = s.Download(fi.EncryptedName, tmpFileEnc)
+	err = c.dl.Download(fi.EncryptedName, tmpFileEnc)
 	if err != nil {
 		return err
 	}
