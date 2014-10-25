@@ -228,9 +228,15 @@ func (c *Setup) Run(args []string) int {
 	conf := common.NewConf()
 	conf.SharedSecret = sharedSecret
 	conf.StorageBucket = bucketName
-	conf.AwsCreds.Region = region.Name
-	conf.AwsCreds.AccessKey = ak.AccessKey.Id
-	conf.AwsCreds.SecretKey = ak.AccessKey.Secret
+	conf.AwsCreds = &common.AwsCreds{
+		Region:    region.Name,
+		AccessKey: ak.AccessKey.Id,
+		SecretKey: ak.AccessKey.Secret,
+	}
+	conf.PeerDist = &common.PeerDist{
+		ListenAddr: ":4166",
+		GossipAddr: ":4166",
+	}
 
 	cstr, err := conf.ToString()
 	println(cstr)

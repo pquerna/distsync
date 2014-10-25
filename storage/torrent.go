@@ -49,7 +49,7 @@ type TorrentDownloader struct {
 }
 
 func NewTorrentDownloader(conf *common.Conf) (*TorrentDownloader, error) {
-	localDir, err := homedir.Expand(conf.LocalDirectory)
+	localDir, err := homedir.Expand(conf.OutputDir)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +64,7 @@ func NewTorrentDownloader(conf *common.Conf) (*TorrentDownloader, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	tdir := path.Join(localDir, ".distsync-torrents")
 
 	return &TorrentDownloader{

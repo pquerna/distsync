@@ -35,6 +35,10 @@ type S3Storage struct {
 }
 
 func NewS3(creds *common.AwsCreds, bucket string) (*S3Storage, error) {
+	if creds == nil {
+		return nil, errors.New("S3: No AwsCreds provided.")
+	}
+
 	if bucket == "" {
 		return nil, errors.New("S3: empty StorageBucket")
 	}
