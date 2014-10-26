@@ -19,6 +19,7 @@ package storage
 
 import (
 	"github.com/pquerna/distsync/common"
+	"github.com/pquerna/distsync/crypto"
 
 	"errors"
 	"io"
@@ -51,8 +52,9 @@ type FileInfo struct {
 }
 
 type Lister interface {
-	// Returns a list of available files to download.
-	List() ([]FileInfo, error)
+	// Returns a list of available files to download. dc will
+	// optionally decrypt filenames if requested.
+	List(dc crypto.Decryptor) ([]FileInfo, error)
 }
 
 type Storage interface {

@@ -123,7 +123,6 @@ func (c *Download) Run(args []string) int {
 
 func (c *Download) getFilesToDownload(fnames []string) ([]storage.FileInfo, error) {
 	ec, err := crypto.NewFromConf(c.conf)
-
 	if err != nil {
 		return nil, err
 	}
@@ -133,24 +132,15 @@ func (c *Download) getFilesToDownload(fnames []string) ([]storage.FileInfo, erro
 		return nil, err
 	}
 
-	storedFiles, err := s.List()
+	storedFiles, err := s.List(ec)
 	if err != nil {
 		return nil, err
 	}
 
 	download := make([]storage.FileInfo, 0, 1)
 	for _, file := range storedFiles {
-		if file.EncryptedName == ".distsync" {
-			continue
-		}
-
-		file.Name, err = ec.DecryptName(file.EncryptedName)
-		if err != nil {
-			return nil, err
-		}
-
-		// TODO: meh
 		for _, fname := range fnames {
+			// TODO: meh.
 			if file.Name == fname {
 				download = append(download, file)
 			}
