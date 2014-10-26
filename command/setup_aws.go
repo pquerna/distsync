@@ -19,6 +19,7 @@ package command
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+	log "github.com/Sirupsen/logrus"
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/iam"
 	"github.com/mitchellh/goamz/s3"
@@ -30,16 +31,28 @@ import (
 )
 
 func awsCreateUser(client *iam.IAM, name string, policy string) (*iam.AccessKey, error) {
+	log.WithFields(log.Fields{
+		"username": name,
+	}).Info("Creating User")
+
 	_, err := client.CreateUser(name, "/")
 	//	user := userResp.User
 	if err != nil {
 		return nil, err
 	}
 
+	log.WithFields(log.Fields{
+		"username": name,
+	}).Info("Applying restricted IAM Policy")
+
 	_, err = client.PutUserPolicy(name, "distsync-policy", policy)
 	if err != nil {
 		return nil, err
 	}
+
+	log.WithFields(log.Fields{
+		"username": name,
+	}).Info("Creating Access Key")
 
 	ak, err := client.CreateAccessKey(name)
 	if err != nil {
@@ -72,6 +85,11 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 
 	bucket := s3Client.Bucket(bucketName)
 
+	log.WithFields(log.Fields{
+		"bucket": bucketName,
+		"region": region.Name,
+	}).Info("Creating S3 Bucket")
+
 	err = bucket.PutBucket("private")
 	if err != nil {
 		return nil, nil, err
@@ -96,6 +114,10 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	log.WithFields(log.Fields{
+		"username":  uploader,
+		"accesskey": akUp.Id,
+	}).Info("Created User and AccessKey for uploading")
 
 	clientconf := common.NewConf()
 	clientconf.SharedSecret = sharedSecret
@@ -110,10 +132,16 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	log.WithFields(log.Fields{
+		"username":  downloader,
+		"accesskey": akDown.Id,
+	}).Info("Created User and AccessKey for downloading")
 
 	serverconf := common.NewConf()
 	serverconf.SharedSecret = sharedSecret
 	serverconf.StorageBucket = bucketName
+	outdir := "~/"
+	serverconf.OutputDir = &outdir
 	serverconf.AwsCreds = &common.AwsCreds{
 		Region:    region.Name,
 		AccessKey: akDown.Id,
@@ -139,7 +167,7 @@ func (c *Setup) awsRegion() (aws.Region, error) {
 
 	regions.Sort()
 
-	choice, err := common.Choice(c.Ui, "AWS Region?", regions)
+	choice, err := common.Choice(c.Ui, "Which AWS Region should distsync upload files to?", regions)
 	if err != nil {
 		return aws.Region{}, err
 	}

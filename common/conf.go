@@ -31,7 +31,7 @@ type Conf struct {
 	Notify        string
 	Storage       string
 	StorageBucket string
-	OutputDir     string
+	OutputDir     *string
 	AwsCreds      *AwsCreds
 	PeerDist      *PeerDist
 }
@@ -53,7 +53,7 @@ func NewConf() *Conf {
 		Encrypt:   "AEAD_AES_128_CBC_HMAC_SHA_256",
 		Notify:    "S3Poll",
 		Storage:   "S3",
-		OutputDir: "~/",
+		OutputDir: nil,
 		AwsCreds:  nil,
 		PeerDist:  nil,
 	}

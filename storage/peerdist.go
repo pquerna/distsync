@@ -24,6 +24,7 @@ import (
 	"github.com/pquerna/distsync/crypto"
 	"github.com/pquerna/distsync/peerdist"
 
+	"errors"
 	"io"
 )
 
@@ -35,7 +36,11 @@ type PeerDownloader struct {
 }
 
 func NewPeerDownloader(conf *common.Conf) (PersistentDownloader, error) {
-	outputDir, err := homedir.Expand(conf.OutputDir)
+	if conf.OutputDir == nil {
+		return nil, errors.New("Config Error: OutputDir must be set.")
+	}
+
+	outputDir, err := homedir.Expand(*conf.OutputDir)
 	if err != nil {
 		return nil, err
 	}

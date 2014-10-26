@@ -27,20 +27,21 @@ import (
 
 func Choice(ui cli.Ui, question string, options []string) (int, error) {
 
-	ui.Output("Select option:")
+	ui.Output(question)
 
 	for i := 0; i < len(options); i++ {
 		ui.Output(fmt.Sprintf("  %d) %s", i+1, options[i]))
 	}
 
 	if len(options) == 1 {
-		ui.Output(question)
-		ui.Output(fmt.Sprintf("Selected %s", options[0]))
+		ui.Output(fmt.Sprintf("Automatically selected %s", options[0]))
+		ui.Output("")
 		return 0, nil
 	}
 
 	for {
-		answer, err := ui.Ask(question + fmt.Sprintf(" [1-%d]", len(options)))
+
+		answer, err := ui.Ask(fmt.Sprintf("Select option: [1-%d]", len(options)))
 		if err != nil {
 			return 0, err
 		}
@@ -64,5 +65,26 @@ func Choice(ui cli.Ui, question string, options []string) (int, error) {
 
 		ui.Output(fmt.Sprintf("Invalid selection: %s", answer))
 		continue
+	}
+}
+
+func YesNoChoice(ui cli.Ui, question string) (bool, error) {
+	for {
+		answer, err := ui.Ask(question)
+		if err != nil {
+			return false, err
+		}
+
+		answer = strings.ToLower(answer)
+
+		if answer == "y" || answer == "yes" {
+			return true, nil
+		}
+
+		if answer == "n" || answer == "no" {
+			return false, nil
+		}
+
+		ui.Output(fmt.Sprintf("Invalid selection: %s", answer))
 	}
 }

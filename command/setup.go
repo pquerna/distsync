@@ -18,11 +18,15 @@
 package command
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/mitchellh/cli"
+	"github.com/mitchellh/go-homedir"
 	"github.com/pquerna/distsync/common"
 
 	"flag"
 	_ "fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -39,28 +43,6 @@ Usage: distsync setup
 
 `
 	return strings.TrimSpace(helpText)
-}
-
-type backend int
-
-const (
-	BACKEND_NONE backend = 1 << iota
-	BACKEND_AWS
-	BACKEND_RACKSPACE
-)
-
-func (c *Setup) pickBackend() (backend, error) {
-
-	choice, err := common.Choice(c.Ui, "Backend", []string{
-		"AWS S3",
-		// "Rackspace Cloud Files",
-	})
-
-	if err != nil {
-		return BACKEND_NONE, err
-	}
-
-	return backend(choice + 1), nil
 }
 
 func (c *Setup) Run(args []string) int {
@@ -88,6 +70,8 @@ func (c *Setup) Run(args []string) int {
 	var clientconf *common.Conf
 	var servconf *common.Conf
 
+	c.Ui.Info("")
+	c.Ui.Info("")
 	switch backend {
 	case BACKEND_AWS:
 		clientconf, servconf, err = c.setupAws()
@@ -106,7 +90,6 @@ func (c *Setup) Run(args []string) int {
 	}
 
 	cstr, err := clientconf.ToString()
-	println(cstr)
 	if err != nil {
 		c.Ui.Error("Error: " + err.Error())
 		c.Ui.Error("")
@@ -114,16 +97,110 @@ func (c *Setup) Run(args []string) int {
 	}
 
 	sstr, err := servconf.ToString()
-	println(sstr)
 	if err != nil {
 		c.Ui.Error("Error: " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
 
+	c.Ui.Info("")
+
+	err = c.writeConfFile("~/.distsync", cstr)
+	if err != nil {
+		c.Ui.Error("Error: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
+	err = c.writeConfFile("~/.distsyncd", sstr)
+	if err != nil {
+		c.Ui.Error("Error: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
+	c.Ui.Info("")
+	c.Ui.Info("Setup Complete!")
+	c.Ui.Info("")
+	c.Ui.Info("To get started using distync:")
+	c.Ui.Info("1) Copy ~/.distsyncd to your servers, and run:")
+	c.Ui.Info("  distsync daemon")
+	c.Ui.Info("")
+	c.Ui.Info("")
+	c.Ui.Info("2) Use `distsync upload` from your build infrastructure:")
+	c.Ui.Info("")
+	c.Ui.Info("  distsync upload myapp-1.0.tar.gz")
+	c.Ui.Info("")
+	c.Ui.Info("")
+
 	return 0
 }
 
+type backend int
+
+const (
+	BACKEND_NONE backend = 1 << iota
+	BACKEND_AWS
+	BACKEND_RACKSPACE
+)
+
+func (c *Setup) pickBackend() (backend, error) {
+
+	// TODO: more choices, use array offset
+	_, err := common.Choice(c.Ui, "What Cloud Service should distsync use to store files?", []string{
+		"AWS S3",
+		// "Rackspace Cloud Files",
+	})
+
+	if err != nil {
+		return BACKEND_NONE, err
+	}
+
+	return BACKEND_AWS, nil
+}
+
+func fileexists(name string) bool {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *Setup) writeConfFile(name string, contents string) error {
+	name, err := homedir.Expand(name)
+	if err != nil {
+		return err
+	}
+
+	if fileexists(name) {
+		yn, err := common.YesNoChoice(c.Ui,
+			"File "+name+" exists.\nOverwrite? [y/n]")
+		if err != nil {
+			return err
+		}
+
+		if yn == false {
+			name, err = c.Ui.Ask("Alternative filename? ")
+			if err != nil {
+				return err
+			}
+			return c.writeConfFile(name, contents)
+		}
+	}
+
+	err = ioutil.WriteFile(name, []byte(contents), 0600)
+	if err != nil {
+		return err
+	}
+
+	log.WithFields(log.Fields{
+		"path": name,
+	}).Info("Wrote config file.")
+	return nil
+}
+
 func (c *Setup) Synopsis() string {
-	return "Configure a new distsync."
+	return "Configures distsync and creates required cloud resources."
 }

@@ -49,7 +49,11 @@ type TorrentDownloader struct {
 }
 
 func NewTorrentDownloader(conf *common.Conf) (*TorrentDownloader, error) {
-	localDir, err := homedir.Expand(conf.OutputDir)
+	if conf.OutputDir == nil {
+		return nil, errors.New("Config Error: OutputDir must be set.")
+	}
+
+	localDir, err := homedir.Expand(*conf.OutputDir)
 	if err != nil {
 		return nil, err
 	}

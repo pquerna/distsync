@@ -24,6 +24,7 @@ import (
 	"github.com/pquerna/distsync/storage"
 
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -45,7 +46,7 @@ Usage: distsync download [options] file
 
 Options:
 
-  -conf=~/.distsync         Read specific configuration file.
+  -conf=~/.distsyncd         Read specific configuration file.
 `
 	return strings.TrimSpace(helpText)
 }
@@ -55,7 +56,7 @@ func (c *Download) Run(args []string) int {
 
 	cmdFlags := flag.NewFlagSet("download", flag.ContinueOnError)
 	cmdFlags.Usage = func() { c.Ui.Output(c.Help()) }
-	cmdFlags.StringVar(&confFile, "conf", "~/.distsync", "Configuration path.")
+	cmdFlags.StringVar(&confFile, "conf", "~/.distsyncd", "Configuration path.")
 
 	err := cmdFlags.Parse(args)
 	if err != nil {
@@ -80,6 +81,12 @@ func (c *Download) Run(args []string) int {
 	download, err := c.getFilesToDownload(files)
 	if err != nil {
 		c.Ui.Error("Error Getting files to download: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
+	if len(download) == 0 {
+		c.Ui.Error(fmt.Sprintf("Files not found: %v", files))
 		c.Ui.Error("")
 		return 1
 	}
