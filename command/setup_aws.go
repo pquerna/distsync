@@ -29,8 +29,29 @@ import (
 	"sort"
 )
 
+func awsCreateUser(client *iam.IAM, name string, policy string) (*iam.AccessKey, error) {
+	_, err := client.CreateUser(name, "/")
+	//	user := userResp.User
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = client.PutUserPolicy(name, "distsync-policy", policy)
+	if err != nil {
+		return nil, err
+	}
+
+	ak, err := client.CreateAccessKey(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ak.AccessKey, nil
+}
+
 func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
-	bucketName := "distsync-" + uuid.NewRandom().String()
+	dsId := uuid.NewRandom().String()
+	bucketName := "distsync-" + dsId
 
 	sharedSecret, err := crypto.RandomSecret()
 	if err != nil {
@@ -57,23 +78,21 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	}
 
 	iamClient := iam.New(auth, region)
-	_, err = iamClient.CreateUser(bucketName, "/")
-	//	user := userResp.User
+
+	uploader := "distsync-upload-" + dsId
+	downloader := "distsync-download-" + dsId
+
+	policyUploader, err := policyUploader(bucketName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	policy, err := s3policy(bucketName)
+	policyDownloader, err := policyDownloader(bucketName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	_, err = iamClient.PutUserPolicy(bucketName, "distsync-uploader", policy)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ak, err := iamClient.CreateAccessKey(bucketName)
+	akUp, err := awsCreateUser(iamClient, uploader, policyUploader)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -83,8 +102,13 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	clientconf.StorageBucket = bucketName
 	clientconf.AwsCreds = &common.AwsCreds{
 		Region:    region.Name,
-		AccessKey: ak.AccessKey.Id,
-		SecretKey: ak.AccessKey.Secret,
+		AccessKey: akUp.Id,
+		SecretKey: akUp.Secret,
+	}
+
+	akDown, err := awsCreateUser(iamClient, downloader, policyDownloader)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	serverconf := common.NewConf()
@@ -92,8 +116,8 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	serverconf.StorageBucket = bucketName
 	serverconf.AwsCreds = &common.AwsCreds{
 		Region:    region.Name,
-		AccessKey: ak.AccessKey.Id,
-		SecretKey: ak.AccessKey.Secret,
+		AccessKey: akDown.Id,
+		SecretKey: akDown.Secret,
 	}
 
 	/*
@@ -178,20 +202,14 @@ type IAMPolicy struct {
 	Statement []IAMStatement
 }
 
-func s3policy(bucket string) (string, error) {
+func policyBuilder(actions []string, resources []string) (string, error) {
 	p := IAMPolicy{
 		Version: "2012-10-17",
 		Statement: []IAMStatement{
 			IAMStatement{
-				Effect: "Allow",
-				// TODO: improve this policy.
-				Action: []string{
-					"s3:*",
-				},
-				Resource: []string{
-					"arn:aws:s3:::" + bucket + "",
-					"arn:aws:s3:::" + bucket + "/*",
-				},
+				Effect:   "Allow",
+				Action:   actions,
+				Resource: resources,
 			},
 		},
 	}
@@ -203,4 +221,29 @@ func s3policy(bucket string) (string, error) {
 	}
 
 	return string(b), nil
+}
+
+func policyUploader(bucket string) (string, error) {
+	return policyBuilder(
+		[]string{
+			"s3:ListBucket",
+			"s3:PutObject",
+		},
+		[]string{
+			"arn:aws:s3:::" + bucket + "",
+			"arn:aws:s3:::" + bucket + "/*",
+		})
+}
+
+func policyDownloader(bucket string) (string, error) {
+	return policyBuilder(
+		[]string{
+			"s3:ListBucket",
+			"s3:GetObject",
+			"s3:GetObjectTorrent",
+		},
+		[]string{
+			"arn:aws:s3:::" + bucket + "",
+			"arn:aws:s3:::" + bucket + "/*",
+		})
 }
