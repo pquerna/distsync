@@ -120,7 +120,7 @@ type IAMPolicy struct {
 	Statement []IAMStatement
 }
 
-func s3policy(name string) (string, error) {
+func s3policy(bucket string) (string, error) {
 	p := IAMPolicy{
 		Version: "2012-10-17",
 		Statement: []IAMStatement{
@@ -131,8 +131,8 @@ func s3policy(name string) (string, error) {
 					"s3:*",
 				},
 				Resource: []string{
-					"arn:aws:s3:::" + name + "",
-					"arn:aws:s3:::" + name + "/*",
+					"arn:aws:s3:::" + bucket + "",
+					"arn:aws:s3:::" + bucket + "/*",
 				},
 			},
 		},
@@ -233,10 +233,13 @@ func (c *Setup) Run(args []string) int {
 		AccessKey: ak.AccessKey.Id,
 		SecretKey: ak.AccessKey.Secret,
 	}
-	conf.PeerDist = &common.PeerDist{
-		ListenAddr: ":4166",
-		GossipAddr: ":4166",
-	}
+
+	/*
+		conf.PeerDist = &common.PeerDist{
+			ListenAddr: ":4166",
+			GossipAddr: ":4166",
+		}
+	*/
 
 	cstr, err := conf.ToString()
 	println(cstr)
