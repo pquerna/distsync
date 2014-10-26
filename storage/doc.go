@@ -72,9 +72,9 @@ func NewFromConf(c *common.Conf) (Storage, error) {
 	switch strings.ToUpper(c.Storage) {
 	case "S3":
 		return NewS3(c.AwsCreds, c.StorageBucket)
-	case "S3+BITTORRENT":
+	case "disabled-S3+BITTORRENT":
 		return NewS3(c.AwsCreds, c.StorageBucket)
-	case "S3+P2P":
+	case "disabled-S3+P2P":
 		return NewS3(c.AwsCreds, c.StorageBucket)
 	}
 
@@ -91,9 +91,9 @@ func NewPersistentDownloader(c *common.Conf) (PersistentDownloader, error) {
 	switch strings.ToUpper(c.Storage) {
 	case "S3":
 		return NewS3(c.AwsCreds, c.StorageBucket)
-	case "S3+BITTORRENT":
+	case "disabled-S3+BITTORRENT":
 		return NewTorrentDownloader(c)
-	case "S3+P2P":
+	case "disabled-S3+P2P":
 		return NewPeerDownloader(c)
 	}
 
