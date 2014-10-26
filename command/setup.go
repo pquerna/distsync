@@ -53,7 +53,7 @@ func (c *Setup) pickBackend() (backend, error) {
 
 	choice, err := common.Choice(c.Ui, "Backend", []string{
 		"AWS S3",
-		"Rackspace Cloud Files",
+		// "Rackspace Cloud Files",
 	})
 
 	if err != nil {
@@ -91,6 +91,13 @@ func (c *Setup) Run(args []string) int {
 	switch backend {
 	case BACKEND_AWS:
 		clientconf, servconf, err = c.setupAws()
+		if err != nil {
+			c.Ui.Error("Error: " + err.Error())
+			c.Ui.Error("")
+			return 1
+		}
+	case BACKEND_RACKSPACE:
+		clientconf, servconf, err = c.setupRackspace()
 		if err != nil {
 			c.Ui.Error("Error: " + err.Error())
 			c.Ui.Error("")
