@@ -18,18 +18,11 @@
 package command
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/mitchellh/cli"
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/iam"
-	"github.com/mitchellh/goamz/s3"
 	"github.com/pquerna/distsync/common"
-	"github.com/pquerna/distsync/crypto"
 
-	"encoding/json"
 	"flag"
 	_ "fmt"
-	"sort"
 	"strings"
 )
 
@@ -48,103 +41,26 @@ Usage: distsync setup
 	return strings.TrimSpace(helpText)
 }
 
-func (c *Setup) getRegion() (aws.Region, error) {
-	regions := make(sort.StringSlice, 0)
+type backend int
 
-	for k, _ := range aws.Regions {
-		regions = append(regions, k)
-	}
+const (
+	BACKEND_NONE backend = 1 << iota
+	BACKEND_AWS
+	BACKEND_RACKSPACE
+)
 
-	regions.Sort()
+func (c *Setup) pickBackend() (backend, error) {
 
-	choice, err := common.Choice(c.Ui, "AWS Region?", regions)
-	if err != nil {
-		return aws.Region{}, err
-	}
-
-	return aws.Regions[regions[choice]], nil
-}
-
-func (c *Setup) getAuth() (aws.Auth, error) {
-	auth, err := aws.SharedAuth()
-	if err == nil {
-		return auth, nil
-	}
-
-	auth, err = aws.EnvAuth()
-	if err == nil {
-		return auth, nil
-	}
-
-	auth, err = c.promptAuth()
-	if err == nil {
-		return auth, nil
-	}
-	return aws.Auth{}, err
-
-}
-
-func (c *Setup) promptAuth() (aws.Auth, error) {
-	var err error
-	a := aws.Auth{}
-	a.AccessKey, err = c.Ui.Ask("AWS AccessKey: ")
-	if err != nil {
-		return a, err
-	}
-
-	a.SecretKey, err = c.Ui.Ask("AWS SecretKey: ")
-	if err != nil {
-		return a, err
-	}
-
-	a.Token, err = c.Ui.Ask("AWS Token (optional, press enter for none): ")
-	if err != nil {
-		return a, err
-	}
-
-	return a, nil
-}
-
-type s3PolicyInfo struct {
-	Name string
-}
-
-type IAMStatement struct {
-	Effect   string
-	Action   []string
-	Resource []string
-}
-
-type IAMPolicy struct {
-	Version   string
-	Statement []IAMStatement
-}
-
-func s3policy(bucket string) (string, error) {
-	p := IAMPolicy{
-		Version: "2012-10-17",
-		Statement: []IAMStatement{
-			IAMStatement{
-				Effect: "Allow",
-				// TODO: improve this policy.
-				Action: []string{
-					"s3:*",
-				},
-				Resource: []string{
-					"arn:aws:s3:::" + bucket + "",
-					"arn:aws:s3:::" + bucket + "/*",
-				},
-			},
-		},
-	}
-
-	b, err := json.Marshal(p)
+	choice, err := common.Choice(c.Ui, "Backend", []string{
+		"AWS S3",
+		"Rackspace Cloud Files",
+	})
 
 	if err != nil {
-		return "", err
+		return BACKEND_NONE, err
 	}
 
-	return string(b), nil
+	return backend(choice + 1), nil
 }
 
 func (c *Setup) Run(args []string) int {
@@ -162,89 +78,38 @@ func (c *Setup) Run(args []string) int {
 		return 1
 	}
 
-	sharedSecret, err := crypto.RandomSecret()
+	backend, err := c.pickBackend()
 	if err != nil {
 		c.Ui.Error("Error: " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
 
-	auth, err := c.getAuth()
-	if err != nil {
-		c.Ui.Error("Error: " + err.Error())
-		c.Ui.Error("")
-		return 1
-	}
+	var clientconf *common.Conf
+	var servconf *common.Conf
 
-	region, err := c.getRegion()
-	if err != nil {
-		c.Ui.Error("Error: " + err.Error())
-		c.Ui.Error("")
-		return 1
-	}
-
-	bucketName := "distsync-" + uuid.NewRandom().String()
-
-	s3Client := s3.New(auth, region)
-
-	bucket := s3Client.Bucket(bucketName)
-	err = bucket.PutBucket("public-read")
-	if err != nil {
-		c.Ui.Error("S3 error on bucket creation: " + err.Error())
-		c.Ui.Error("")
-		return 1
-	}
-
-	iamClient := iam.New(auth, region)
-	_, err = iamClient.CreateUser(bucketName, "/")
-	//	user := userResp.User
-	if err != nil {
-		c.Ui.Error("IAM Error on CreateUser: " + err.Error())
-		c.Ui.Error("")
-		return 1
-	}
-
-	policy, err := s3policy(bucketName)
-	if err != nil {
-		c.Ui.Error("Policy Template error: " + err.Error())
-		c.Ui.Error("")
-		return 1
-	}
-
-	_, err = iamClient.PutUserPolicy(bucketName, "distsync-uploader", policy)
-	if err != nil {
-		c.Ui.Error("IAM Error on PutUserPolicy: " + err.Error())
-		c.Ui.Error("")
-		return 1
-	}
-
-	ak, err := iamClient.CreateAccessKey(bucketName)
-	if err != nil {
-		c.Ui.Error("IAM Error on CreateAccessKey: " + err.Error())
-		c.Ui.Error("")
-		return 1
-	}
-
-	conf := common.NewConf()
-	conf.SharedSecret = sharedSecret
-	conf.StorageBucket = bucketName
-	conf.AwsCreds = &common.AwsCreds{
-		Region:    region.Name,
-		AccessKey: ak.AccessKey.Id,
-		SecretKey: ak.AccessKey.Secret,
-	}
-
-	/*
-		conf.PeerDist = &common.PeerDist{
-			ListenAddr: ":4166",
-			GossipAddr: ":4166",
+	switch backend {
+	case BACKEND_AWS:
+		clientconf, servconf, err = c.setupAws()
+		if err != nil {
+			c.Ui.Error("Error: " + err.Error())
+			c.Ui.Error("")
+			return 1
 		}
-	*/
+	}
 
-	cstr, err := conf.ToString()
+	cstr, err := clientconf.ToString()
 	println(cstr)
 	if err != nil {
-		c.Ui.Error("Error on creating conf :( " + err.Error())
+		c.Ui.Error("Error: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
+	sstr, err := servconf.ToString()
+	println(sstr)
+	if err != nil {
+		c.Ui.Error("Error: " + err.Error())
 		c.Ui.Error("")
 		return 1
 	}
