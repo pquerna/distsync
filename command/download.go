@@ -51,6 +51,27 @@ Options:
 	return strings.TrimSpace(helpText)
 }
 
+func diffslice(a []string, b []string) []string {
+	rv := make([]string, 0)
+	tmp := make(map[string]int)
+
+	for _, v := range a {
+		tmp[v] = 1
+	}
+
+	for _, v := range b {
+		tmp[v] += 1
+	}
+
+	for k, v := range tmp {
+		if v == 1 {
+			rv = append(rv, k)
+		}
+	}
+
+	return rv
+}
+
 func (c *Download) Run(args []string) int {
 	var confFile string
 
@@ -85,8 +106,13 @@ func (c *Download) Run(args []string) int {
 		return 1
 	}
 
-	if len(download) == 0 {
-		c.Ui.Error(fmt.Sprintf("Files not found: %v", files))
+	if len(download) != len(files) {
+		dlfiles := make([]string, 0, len(download))
+		for _, dl := range download {
+			dlfiles = append(dlfiles, dl.Name)
+		}
+		diff := diffslice(files, dlfiles)
+		c.Ui.Error(fmt.Sprintf("Files not found: %v", diff))
 		c.Ui.Error("")
 		return 1
 	}
