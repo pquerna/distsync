@@ -148,7 +148,7 @@ func (s *S3Storage) Download(filename string, writer io.Writer) error {
 	return nil
 }
 
-func (s *S3Storage) List(dc crypto.Decryptor) ([]FileInfo, error) {
+func (s *S3Storage) List(dc crypto.Decryptor) ([]*FileInfo, error) {
 	client, err := s.client()
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (s *S3Storage) List(dc crypto.Decryptor) ([]FileInfo, error) {
 		return nil, err
 	}
 
-	rv := make([]FileInfo, 0, len(*contents))
+	rv := make([]*FileInfo, 0, len(*contents))
 	for _, key := range *contents {
 		if key.Key == ".distsync" {
 			continue
@@ -180,7 +180,7 @@ func (s *S3Storage) List(dc crypto.Decryptor) ([]FileInfo, error) {
 			}
 		}
 
-		rv = append(rv, FileInfo{
+		rv = append(rv, &FileInfo{
 			EncryptedName: key.Key,
 			Name:          name,
 			LastModified:  lm,

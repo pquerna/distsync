@@ -151,7 +151,7 @@ func (c *Daemon) updateFiles() error {
 		log.WithFields(log.Fields{
 			"file": file.Name,
 		}).Info("Starting download of file")
-		fd := c.dq.Add(c.conf, &file, c.donefiles)
+		fd := c.dq.Add(c.conf, file, c.donefiles)
 		c.files[file.Name] = fd
 	}
 

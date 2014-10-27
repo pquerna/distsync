@@ -147,7 +147,7 @@ func (c *Download) Run(args []string) int {
 	return 0
 }
 
-func (c *Download) getFilesToDownload(fnames []string) ([]storage.FileInfo, error) {
+func (c *Download) getFilesToDownload(fnames []string) ([]*storage.FileInfo, error) {
 	ec, err := crypto.NewFromConf(c.conf)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (c *Download) getFilesToDownload(fnames []string) ([]storage.FileInfo, erro
 		return nil, err
 	}
 
-	download := make([]storage.FileInfo, 0, 1)
+	download := make([]*storage.FileInfo, 0, 1)
 	for _, file := range storedFiles {
 		for _, fname := range fnames {
 			// TODO: meh.
@@ -176,7 +176,7 @@ func (c *Download) getFilesToDownload(fnames []string) ([]storage.FileInfo, erro
 	return download, nil
 }
 
-func (c *Download) downloadFile(wg *sync.WaitGroup, fi storage.FileInfo) {
+func (c *Download) downloadFile(wg *sync.WaitGroup, fi *storage.FileInfo) {
 	defer wg.Done()
 
 	err := c._downloadFile(fi)
@@ -189,7 +189,7 @@ func (c *Download) downloadFile(wg *sync.WaitGroup, fi storage.FileInfo) {
 	}
 }
 
-func (c *Download) _downloadFile(fi storage.FileInfo) error {
+func (c *Download) _downloadFile(fi *storage.FileInfo) error {
 	ec, err := crypto.NewFromConf(c.conf)
 
 	if err != nil {
