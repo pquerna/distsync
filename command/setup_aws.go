@@ -122,7 +122,7 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	clientconf := common.NewConf()
 	clientconf.SharedSecret = sharedSecret
 	clientconf.StorageBucket = bucketName
-	clientconf.AwsCreds = &common.AwsCreds{
+	clientconf.Aws = &common.AwsCreds{
 		Region:    region.Name,
 		AccessKey: akUp.Id,
 		SecretKey: akUp.Secret,
@@ -142,7 +142,7 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	serverconf.StorageBucket = bucketName
 	outdir := "~/"
 	serverconf.OutputDir = &outdir
-	serverconf.AwsCreds = &common.AwsCreds{
+	serverconf.Aws = &common.AwsCreds{
 		Region:    region.Name,
 		AccessKey: akDown.Id,
 		SecretKey: akDown.Secret,

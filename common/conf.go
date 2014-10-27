@@ -32,7 +32,7 @@ type Conf struct {
 	Storage       string
 	StorageBucket string
 	OutputDir     *string
-	AwsCreds      *AwsCreds
+	Aws           *AwsCreds
 	PeerDist      *PeerDist
 }
 
@@ -54,7 +54,7 @@ func NewConf() *Conf {
 		Notify:    "S3Poll",
 		Storage:   "S3",
 		OutputDir: nil,
-		AwsCreds:  nil,
+		Aws:       nil,
 		PeerDist:  nil,
 	}
 }

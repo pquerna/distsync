@@ -19,15 +19,26 @@ package notify
 
 import (
 	"github.com/pquerna/distsync/common"
+
+	"errors"
+	"strings"
 )
 
-type Manifest struct {
-	Entries []common.Entry
+// A notifier provides a channel for when
+// the Backend storage area has changed.
+// Callers should then call their Storage engine with List().
+type Notifier interface {
+	Start() error
+	Stop() error
+	// Channel gets a single item when something changes.
+	Changed() chan int
 }
 
-// A notifier provides a channel for when
-// the Manifest has changed.
-type Notifier interface {
-	Manifest() *Manifest
-	Changed() chan int
+func NewFromConf(c *common.Conf) (Notifier, error) {
+	switch strings.ToUpper(c.Notify) {
+	case "S3POLL":
+		return NewS3Poll(c.Aws, c.StorageBucket)
+	}
+
+	return nil, errors.New("Unknown Notify backend: " + c.Notify)
 }
