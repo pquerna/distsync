@@ -185,7 +185,8 @@ func (c *Daemon) mainLoop() {
 
 	// TODO: fix version number in one place.
 	log.WithFields(log.Fields{
-		"version": "0.1.0-dev",
+		"version":     "0.1.0-dev",
+		"working_dir": *c.conf.OutputDir,
 	}).Info("distsync daemon started")
 
 	for {
