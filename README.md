@@ -4,14 +4,13 @@
 
 `distsync` is the best damn way to distribute tarballs from your build infrastructure to production servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing) is not intended for _personal_ use, instead all options and design choices are optimized for server use.
 
-This means distsync is only optimized to move your application tarball or docker export from your CI, to a group of servers, using public cloud object stores as it's primary storage backend.  It can optionally use BitTorrent to accelerate delivery and reduce S3 costs.
+This means distsync is only optimized to move your application tarball or docker export from your CI, to a group of servers, using public cloud object stores as it's primary storage backend.
 
 ## Features
 
 * __Simple__: Single command to upload from CI, easy daemon mode for servers.
 * __Encrypted__: [AEAD Encryption](https://github.com/codahale/etm) of both file contents and file names.
 * __Multi-Cloud__: Supports both AWS S3 and ~~Rackspace Cloud Files~~ as storage backends.
-* __BitTorrent__: AWS S3 can optionally use BitTorrent to increase speed and reduce transfer costs.
 * __Pluggable__: Contributions Welcome: New storage, encryption, and transfer plugins are welcome.
 
 
@@ -48,7 +47,7 @@ Encrypt = "AEAD_AES_128_CBC_HMAC_SHA_256"
 Notify = "S3Poll"
 Storage = "S3"
 
-[AwsCreds]
+[Aws]
   Region = "us-east-1"
   AccessKey = "<access-key here>"
   SecretKey = "<secret-key here>"
@@ -110,13 +109,13 @@ __Details__: Storage backend used to upload and download files. Must be one of:
 * S3+BitTorrent
 
 
-#### Section: AwsCreds
+#### Section: Aws
 
 Credentials to use against AWS.  The user associated with these credentials should be setup with [AWS IAM](http://aws.amazon.com/iam/) to have limited privileges.
 
 TODO: Document IAM policy that is created with `distsync setup`
 
-#### AwsCreds.Region
+#### Aws.Region
 
 __Default Value__: us-east-1
 
@@ -136,7 +135,7 @@ __Details__: Region to use.  Must be one of:
 * us-west-2
 
 
-#### AwsCreds.AccessKey
+#### Aws.AccessKey
 
 __Default Value__: None
 
@@ -145,7 +144,7 @@ __Type__: String
 __Details__: Access Key to use with AWS.
 
 
-#### AwsCreds.SecretKey
+#### Aws.SecretKey
 
 __Default Value__: None
 
