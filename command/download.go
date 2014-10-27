@@ -25,17 +25,18 @@ import (
 
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"os/signal"
 	"strings"
-	"sync"
 )
 
 type Download struct {
-	Ui   cli.Ui
-	stop error
-	dl   storage.PersistentDownloader
-	conf *common.Conf
+	Ui        cli.Ui
+	stop      error
+	dl        storage.PersistentDownloader
+	dq        *storage.DownloadQueue
+	donefiles chan *storage.FileDownload
+	conf      *common.Conf
 }
 
 func (c *Download) Help() string {
@@ -117,6 +118,13 @@ func (c *Download) Run(args []string) int {
 		return 1
 	}
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		c.Ui.Error("Error getting cwd: " + err.Error())
+		c.Ui.Error("")
+		return 1
+	}
+
 	c.dl, err = storage.NewPersistentDownloader(c.conf)
 	if err != nil {
 		c.Ui.Error("Error configuring download: " + err.Error())
@@ -131,13 +139,50 @@ func (c *Download) Run(args []string) int {
 		return 1
 	}
 
-	var wg sync.WaitGroup
+	c.dq = storage.NewDownloadQueue(c.dl)
 
-	for _, file := range download {
-		wg.Add(1)
-		go c.downloadFile(&wg, file)
+	err = c.dq.Start()
+	if err != nil {
+		c.Ui.Error("Error starting download queue: " + err.Error())
+		c.Ui.Error("")
+		return 1
 	}
-	wg.Wait()
+
+	c.donefiles = make(chan *storage.FileDownload)
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	c.conf.OutputDir = &cwd
+
+	for _, v := range download {
+		c.dq.Add(c.conf, v, c.donefiles)
+	}
+
+	completed := 0
+	defer func() {
+		c.dl.Stop()
+		c.dq.Stop()
+	}()
+
+	for {
+		select {
+		case done := <-c.donefiles:
+			completed += 1
+			if done.Error != nil {
+				c.Ui.Error("Error downloading " + done.FileInfo.Name + " :" + err.Error())
+				c.Ui.Error("")
+			} else {
+				c.Ui.Info("Download Complete: " + done.FileInfo.Name)
+			}
+
+			if completed == len(download) {
+				return 0
+			}
+		case <-interrupt:
+			c.Ui.Info("Caught CTRL+C, stopping....")
+			return 1
+		}
+	}
 
 	if c.stop != nil {
 		c.Ui.Error("Download failed: " + c.stop.Error())
@@ -174,102 +219,6 @@ func (c *Download) getFilesToDownload(fnames []string) ([]*storage.FileInfo, err
 	}
 
 	return download, nil
-}
-
-func (c *Download) downloadFile(wg *sync.WaitGroup, fi *storage.FileInfo) {
-	defer wg.Done()
-
-	err := c._downloadFile(fi)
-	if err != nil {
-		_, ok := err.(*stopError)
-
-		if !ok {
-			c.stop = err
-		}
-	}
-}
-
-func (c *Download) _downloadFile(fi *storage.FileInfo) error {
-	ec, err := crypto.NewFromConf(c.conf)
-
-	if err != nil {
-		return err
-	}
-	if c.stop != nil {
-		return &stopError{}
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	if c.stop != nil {
-		return &stopError{}
-	}
-
-	// TODO: consider io.Pipe() ?
-	tmpFileEnc, err := ioutil.TempFile(cwd, ".distsync-e")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		tmpFileEnc.Close()
-		os.Remove(tmpFileEnc.Name())
-	}()
-	if c.stop != nil {
-		return &stopError{}
-	}
-
-	c.Ui.Info("Downloading " + fi.EncryptedName + " -> " + fi.Name)
-
-	err = c.dl.Download(fi.EncryptedName, tmpFileEnc)
-	if err != nil {
-		return err
-	}
-	if c.stop != nil {
-		return &stopError{}
-	}
-
-	tmpFile, err := ioutil.TempFile(cwd, ".distsync")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
-	}()
-	if c.stop != nil {
-		return &stopError{}
-	}
-
-	_, err = tmpFileEnc.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-	if c.stop != nil {
-		return &stopError{}
-	}
-
-	err = ec.Decrypt(tmpFileEnc, tmpFile)
-
-	if err != nil {
-		return err
-	}
-	if c.stop != nil {
-		return &stopError{}
-	}
-
-	err = os.Rename(tmpFile.Name(), fi.Name)
-	if err != nil {
-		return err
-	}
-
-	err = os.Chtimes(fi.Name, fi.LastModified, fi.LastModified)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c *Download) Synopsis() string {

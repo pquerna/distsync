@@ -70,6 +70,7 @@ func (fd *FileDownload) Done(err error) {
 
 	fd.Error = err
 	fd.wg.Done()
+	fd.done <- fd
 }
 
 func (fd *FileDownload) Start() {
