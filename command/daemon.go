@@ -21,6 +21,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/mitchellh/cli"
 	"github.com/pquerna/distsync/common"
+	"github.com/pquerna/distsync/crypto"
 	"github.com/pquerna/distsync/notify"
 	"github.com/pquerna/distsync/storage"
 
@@ -29,15 +30,20 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Daemon struct {
-	Ui      cli.Ui
-	wg      sync.WaitGroup
-	mainerr error
-	dl      storage.PersistentDownloader
-	notify  notify.Notifier
-	conf    *common.Conf
+	wg        sync.WaitGroup
+	mtx       sync.Mutex
+	Ui        cli.Ui
+	mainerr   error
+	dq        *storage.DownloadQueue
+	dl        storage.PersistentDownloader
+	notify    notify.Notifier
+	conf      *common.Conf
+	files     map[string]*storage.FileDownload
+	donefiles chan *storage.FileDownload
 }
 
 func (c *Daemon) Help() string {
@@ -114,9 +120,50 @@ func (c *Daemon) stop() {
 	c.dl.Stop()
 }
 
-func (c *Daemon) mainLoop() {
-	defer c.stop()
+func (c *Daemon) updateFiles() error {
+	ec, err := crypto.NewFromConf(c.conf)
+	if err != nil {
+		return err
+	}
 
+	st, err := storage.NewFromConf(c.conf)
+	if err != nil {
+		return err
+	}
+
+	files, err := st.List(ec)
+
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	for _, file := range files {
+		fio, ok := c.files[file.Name]
+		if ok {
+			if file.LastModified.Equal(fio.FileInfo.LastModified) ||
+				file.LastModified.Before(fio.FileInfo.LastModified) {
+				// same file, but it was older or equal.
+				continue
+			} else {
+				fio.Stop()
+			}
+		}
+
+		log.WithFields(log.Fields{
+			"file": file.Name,
+		}).Info("Starting download of file")
+		fd := c.dq.Add(c.conf, &file, c.donefiles)
+		c.files[file.Name] = fd
+	}
+
+	return nil
+}
+
+func (c *Daemon) mainLoop() {
+	c.files = make(map[string]*storage.FileDownload)
+	c.donefiles = make(chan *storage.FileDownload)
+	c.dq = storage.NewDownloadQueue(c.dl)
+
+	defer c.stop()
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
@@ -131,12 +178,38 @@ func (c *Daemon) mainLoop() {
 		return
 	}
 
+	c.mainerr = c.dq.Start()
+	if c.mainerr != nil {
+		return
+	}
+
+	// TODO: fix version number in one place.
+	log.WithFields(log.Fields{
+		"version": "0.1.0-dev",
+	}).Info("distsync daemon started")
+
 	for {
 		select {
+		case df := <-c.donefiles:
+			log.WithFields(log.Fields{
+				"file": df.FileInfo.Name,
+			}).Info("Completed file")
 		case <-nchan:
-			println("got notification")
+			log.Info("Checking for new files")
+			go func() {
+				err := c.updateFiles()
+				if err != nil {
+					c.mainerr = err
+					close(nchan)
+					return
+				}
+			}()
 		case <-interrupt:
-			log.Info("Caught CTRL+C, stopping.")
+			log.Info("Caught CTRL+C, stopping")
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				os.Exit(1)
+			}()
 			return
 		}
 	}
