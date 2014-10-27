@@ -20,6 +20,7 @@ package command
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/mitchellh/cli"
+	"github.com/mitchellh/go-homedir"
 	"github.com/pquerna/distsync/common"
 	"github.com/pquerna/distsync/crypto"
 	"github.com/pquerna/distsync/notify"
@@ -28,6 +29,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -120,6 +122,34 @@ func (c *Daemon) stop() {
 	c.dl.Stop()
 }
 
+func overwriteFile(name string, t time.Time) bool {
+	st, err := os.Stat(name)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			return true
+		}
+
+		log.WithFields(log.Fields{
+			"name": name,
+			"st":   st,
+			"err":  err,
+		}).Error("error stat'ing path")
+		return false
+	}
+
+	if st.ModTime().After(t) || st.ModTime().Equal(t) {
+		log.WithFields(log.Fields{
+			"name":         name,
+			"local_mtime":  st.ModTime().UTC(),
+			"origin_mtime": t.UTC(),
+		}).Debug("local file is >= origin file, skipping.")
+		return false
+	}
+
+	return true
+}
+
 func (c *Daemon) updateFiles() error {
 	ec, err := crypto.NewFromConf(c.conf)
 	if err != nil {
@@ -131,12 +161,25 @@ func (c *Daemon) updateFiles() error {
 		return err
 	}
 
+	workDir, err := homedir.Expand(*c.conf.OutputDir)
+	if err != nil {
+		return err
+	}
+
 	files, err := st.List(ec)
 
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
+	count := 0
+
 	for _, file := range files {
+		fullname := path.Join(workDir, file.Name)
+
+		if overwriteFile(fullname, file.LastModified) == false {
+			continue
+		}
+
 		fio, ok := c.files[file.Name]
 		if ok {
 			if file.LastModified.Equal(fio.FileInfo.LastModified) ||
@@ -151,9 +194,15 @@ func (c *Daemon) updateFiles() error {
 		log.WithFields(log.Fields{
 			"file": file.Name,
 		}).Info("Starting download of file")
+
 		fd := c.dq.Add(c.conf, file, c.donefiles)
 		c.files[file.Name] = fd
+
+		count++
 	}
+	log.WithFields(log.Fields{
+		"files_to_download": count,
+	}).Info("Completed check of local files.")
 
 	return nil
 }
