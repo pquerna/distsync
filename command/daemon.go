@@ -136,7 +136,7 @@ func (c *Daemon) mainLoop() {
 		case <-nchan:
 			println("got notification")
 		case <-interrupt:
-			log.Info("CTL+C, stopping.")
+			log.Info("Caught CTRL+C, stopping.")
 			return
 		}
 	}
