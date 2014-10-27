@@ -18,11 +18,13 @@
 package common
 
 import (
+	"github.com/dustin/go-humanize"
 	"github.com/mitchellh/cli"
 
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func Choice(ui cli.Ui, question string, options []string) (int, error) {
@@ -87,4 +89,9 @@ func YesNoChoice(ui cli.Ui, question string) (bool, error) {
 
 		ui.Output(fmt.Sprintf("Invalid selection: %s", answer))
 	}
+}
+
+func HumanizeRate(size int64, d time.Duration) string {
+	rate := (float64(size) / d.Seconds())
+	return fmt.Sprintf("%s/s", humanize.Bytes(uint64(rate)))
 }
