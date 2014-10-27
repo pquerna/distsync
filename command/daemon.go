@@ -242,7 +242,8 @@ func (c *Daemon) mainLoop() {
 		select {
 		case df := <-c.donefiles:
 			log.WithFields(log.Fields{
-				"file": df.FileInfo.Name,
+				"file":          df.FileInfo.Name,
+				"transfer_rate": df.TransferRate(),
 			}).Info("Completed file")
 		case <-nchan:
 			log.Info("Checking for new files")

@@ -49,6 +49,7 @@ type FileInfo struct {
 	EncryptedName string
 	Name          string
 	LastModified  time.Time
+	Length        int64
 }
 
 type Lister interface {

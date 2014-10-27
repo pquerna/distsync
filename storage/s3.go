@@ -184,6 +184,7 @@ func (s *S3Storage) List(dc crypto.Decryptor) ([]*FileInfo, error) {
 			EncryptedName: key.Key,
 			Name:          name,
 			LastModified:  lm,
+			Length:        key.Size,
 		})
 	}
 

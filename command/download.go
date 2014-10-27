@@ -172,7 +172,7 @@ func (c *Download) Run(args []string) int {
 				c.Ui.Error("Error downloading " + done.FileInfo.Name + " :" + err.Error())
 				c.Ui.Error("")
 			} else {
-				c.Ui.Info("Download Complete: " + done.FileInfo.Name)
+				c.Ui.Info("Download Complete: " + done.FileInfo.Name + " @ " + done.TransferRate())
 			}
 
 			if completed == len(download) {

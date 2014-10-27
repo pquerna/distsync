@@ -27,6 +27,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 )
 
 type DownloadQueue struct {
@@ -39,11 +40,13 @@ type DownloadQueue struct {
 }
 
 type FileDownload struct {
-	wg       sync.WaitGroup
-	FileInfo *FileInfo
-	conf     *common.Conf
-	Error    error
-	done     chan *FileDownload
+	wg        sync.WaitGroup
+	FileInfo  *FileInfo
+	conf      *common.Conf
+	Error     error
+	done      chan *FileDownload
+	startTime time.Time
+	endTime   time.Time
 }
 
 // TODO: interface? meh.
@@ -69,12 +72,19 @@ func (fd *FileDownload) Done(err error) {
 	}
 
 	fd.Error = err
+	fd.endTime = time.Now().UTC()
 	fd.wg.Done()
 	fd.done <- fd
 }
 
+func (fd *FileDownload) TransferRate() string {
+	duration := fd.endTime.Sub(fd.startTime)
+	return common.HumanizeRate(fd.FileInfo.Length, duration)
+}
+
 func (fd *FileDownload) Start() {
 	fd.wg.Add(1)
+	fd.startTime = time.Now().UTC()
 }
 
 func (fd *FileDownload) Stop() error {
@@ -92,7 +102,7 @@ func (dq *DownloadQueue) Add(conf *common.Conf, fi *FileInfo, dchan chan *FileDo
 		done:     dchan,
 	}
 
-	fd.wg.Add(1)
+	fd.Start()
 
 	dq.work <- fd
 
@@ -184,6 +194,16 @@ func (dq *DownloadQueue) download(fd *FileDownload) error {
 		return err
 	}
 
+	err = tmpFile.Sync()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"file":    tmpFile.Name(),
+			"workdir": workDir,
+			"error":   err,
+		}).Error("Failed to Sync() temp file.")
+		return err
+	}
+
 	err = os.Chtimes(tmpFile.Name(), fd.FileInfo.LastModified, fd.FileInfo.LastModified)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -204,6 +224,11 @@ func (dq *DownloadQueue) download(fd *FileDownload) error {
 			"error":   err,
 		}).Error("Failed to rename file")
 		return err
+	}
+
+	st, err := os.Stat(finalName)
+	if err == nil {
+		fd.FileInfo.Length = st.Size()
 	}
 
 	err = os.Chtimes(finalName, fd.FileInfo.LastModified, fd.FileInfo.LastModified)
