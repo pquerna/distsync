@@ -16,3 +16,51 @@
  */
 
 package storage
+
+import (
+	"github.com/pquerna/distsync/common"
+	"github.com/pquerna/distsync/crypto"
+
+	"errors"
+	"io"
+)
+
+type CloudFilesStorage struct {
+	bucket string
+	creds  *common.RackspaceCreds
+}
+
+func NewCloudFiles(creds *common.RackspaceCreds, bucket string) (*CloudFilesStorage, error) {
+	if creds == nil {
+		return nil, errors.New("CloudFiles: No Rackspace credentials provided.")
+	}
+
+	if bucket == "" {
+		return nil, errors.New("CloudFiles: empty StorageBucket")
+	}
+
+	return &CloudFilesStorage{
+		bucket: bucket,
+		creds:  creds,
+	}, nil
+}
+
+func (cf *CloudFilesStorage) Download(filename string, writer io.Writer) error {
+	return errors.New("not done")
+}
+
+func (cf *CloudFilesStorage) List(dc crypto.Decryptor) ([]*FileInfo, error) {
+	return nil, errors.New("not done")
+}
+
+func (cf *CloudFilesStorage) Upload(filename string, reader io.ReadSeeker) error {
+	return errors.New("not done")
+}
+
+func (cf *CloudFilesStorage) Start() error {
+	return nil
+}
+
+func (cf *CloudFilesStorage) Stop() error {
+	return nil
+}

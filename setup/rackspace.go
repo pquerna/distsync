@@ -268,6 +268,8 @@ func Rackspace(ui cli.Ui) (*common.Conf, *common.Conf, error) {
 	}
 
 	clientconf := common.NewConf()
+	clientconf.Notify = "CloudFilesPoll"
+	clientconf.Storage = "CloudFiles"
 	clientconf.SharedSecret = si.SharedSecret
 	clientconf.StorageBucket = si.BucketName
 	clientconf.Rackspace = &common.RackspaceCreds{
@@ -282,8 +284,10 @@ func Rackspace(ui cli.Ui) (*common.Conf, *common.Conf, error) {
 	}
 
 	serverconf := common.NewConf()
-	clientconf.SharedSecret = si.SharedSecret
-	clientconf.StorageBucket = si.BucketName
+	serverconf.Notify = "CloudFilesPoll"
+	serverconf.Storage = "CloudFiles"
+	serverconf.SharedSecret = si.SharedSecret
+	serverconf.StorageBucket = si.BucketName
 	serverconf.Rackspace = &common.RackspaceCreds{
 		Region:   region,
 		Username: downloader,
