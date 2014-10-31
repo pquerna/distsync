@@ -29,6 +29,7 @@ import (
 	identityRoles "github.com/rackspace/gophercloud/rackspace/identity/v2/roles"
 	"github.com/rackspace/gophercloud/rackspace/identity/v2/tokens"
 	identityUsers "github.com/rackspace/gophercloud/rackspace/identity/v2/users"
+	"github.com/rackspace/gophercloud/rackspace/objectstorage/v1/containers"
 
 	"errors"
 	"sort"
@@ -237,6 +238,18 @@ func Rackspace(ui cli.Ui) (*common.Conf, *common.Conf, error) {
 	sc := rackspace.NewIdentityV2(ac)
 
 	region, err := rackspaceRegion(ui, sc, auth)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	swift, err := rackspace.NewObjectStorageV1(ac, gophercloud.EndpointOpts{
+		Region: region,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = containers.Create(swift, si.BucketName, containers.CreateOpts{}).ExtractHeader()
 	if err != nil {
 		return nil, nil, err
 	}
