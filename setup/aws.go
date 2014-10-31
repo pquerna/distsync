@@ -15,16 +15,15 @@
  *
  */
 
-package command
+package setup
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	log "github.com/Sirupsen/logrus"
+	"github.com/mitchellh/cli"
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/iam"
 	"github.com/mitchellh/goamz/s3"
 	"github.com/pquerna/distsync/common"
-	"github.com/pquerna/distsync/crypto"
 
 	"encoding/json"
 	"sort"
@@ -62,31 +61,28 @@ func awsCreateUser(client *iam.IAM, name string, policy string) (*iam.AccessKey,
 	return &ak.AccessKey, nil
 }
 
-func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
-	dsId := uuid.NewRandom().String()
-	bucketName := "distsync-" + dsId
-
-	sharedSecret, err := crypto.RandomSecret()
+func AWS(ui cli.Ui) (*common.Conf, *common.Conf, error) {
+	si, err := newSetupInfo()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	auth, err := c.awsAuth()
+	auth, err := awsAuth(ui)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	region, err := c.awsRegion()
+	region, err := awsRegion(ui)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	s3Client := s3.New(auth, region)
 
-	bucket := s3Client.Bucket(bucketName)
+	bucket := s3Client.Bucket(si.BucketName)
 
 	log.WithFields(log.Fields{
-		"bucket": bucketName,
+		"bucket": si.BucketName,
 		"region": region.Name,
 	}).Info("Creating S3 Bucket")
 
@@ -97,15 +93,15 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 
 	iamClient := iam.New(auth, region)
 
-	uploader := "distsync-upload-" + dsId
-	downloader := "distsync-download-" + dsId
+	uploader := "distsync-upload-" + si.Id
+	downloader := "distsync-download-" + si.Id
 
-	policyUploader, err := policyUploader(bucketName)
+	policyUploader, err := policyUploader(si.BucketName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	policyDownloader, err := policyDownloader(bucketName)
+	policyDownloader, err := policyDownloader(si.BucketName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,8 +116,8 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	}).Info("Created User and AccessKey for uploading")
 
 	clientconf := common.NewConf()
-	clientconf.SharedSecret = sharedSecret
-	clientconf.StorageBucket = bucketName
+	clientconf.SharedSecret = si.SharedSecret
+	clientconf.StorageBucket = si.BucketName
 	clientconf.Aws = &common.AwsCreds{
 		Region:    region.Name,
 		AccessKey: akUp.Id,
@@ -138,8 +134,8 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	}).Info("Created User and AccessKey for downloading")
 
 	serverconf := common.NewConf()
-	serverconf.SharedSecret = sharedSecret
-	serverconf.StorageBucket = bucketName
+	clientconf.SharedSecret = si.SharedSecret
+	clientconf.StorageBucket = si.BucketName
 	outdir := "~/"
 	serverconf.OutputDir = &outdir
 	serverconf.Aws = &common.AwsCreds{
@@ -158,7 +154,7 @@ func (c *Setup) setupAws() (*common.Conf, *common.Conf, error) {
 	return clientconf, serverconf, nil
 }
 
-func (c *Setup) awsRegion() (aws.Region, error) {
+func awsRegion(ui cli.Ui) (aws.Region, error) {
 	regions := make(sort.StringSlice, 0)
 
 	for k, _ := range aws.Regions {
@@ -167,7 +163,7 @@ func (c *Setup) awsRegion() (aws.Region, error) {
 
 	regions.Sort()
 
-	choice, err := common.Choice(c.Ui, "Which AWS Region should distsync upload files to?", regions)
+	choice, err := common.Choice(ui, "Which AWS Region should distsync upload files to?", regions)
 	if err != nil {
 		return aws.Region{}, err
 	}
@@ -175,7 +171,7 @@ func (c *Setup) awsRegion() (aws.Region, error) {
 	return aws.Regions[regions[choice]], nil
 }
 
-func (c *Setup) awsAuth() (aws.Auth, error) {
+func awsAuth(ui cli.Ui) (aws.Auth, error) {
 	auth, err := aws.SharedAuth()
 	if err == nil {
 		return auth, nil
@@ -186,7 +182,7 @@ func (c *Setup) awsAuth() (aws.Auth, error) {
 		return auth, nil
 	}
 
-	auth, err = c.awsPromptAuth()
+	auth, err = awsPromptAuth(ui)
 	if err == nil {
 		return auth, nil
 	}
@@ -194,20 +190,20 @@ func (c *Setup) awsAuth() (aws.Auth, error) {
 
 }
 
-func (c *Setup) awsPromptAuth() (aws.Auth, error) {
+func awsPromptAuth(ui cli.Ui) (aws.Auth, error) {
 	var err error
 	a := aws.Auth{}
-	a.AccessKey, err = c.Ui.Ask("AWS AccessKey: ")
+	a.AccessKey, err = ui.Ask("AWS AccessKey: ")
 	if err != nil {
 		return a, err
 	}
 
-	a.SecretKey, err = c.Ui.Ask("AWS SecretKey: ")
+	a.SecretKey, err = ui.Ask("AWS SecretKey: ")
 	if err != nil {
 		return a, err
 	}
 
-	a.Token, err = c.Ui.Ask("AWS Token (optional, press enter for none): ")
+	a.Token, err = ui.Ask("AWS Token (optional, press enter for none): ")
 	if err != nil {
 		return a, err
 	}

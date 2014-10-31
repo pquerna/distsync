@@ -15,14 +15,4 @@
  *
  */
 
-package command
-
-import (
-	"github.com/pquerna/distsync/common"
-
-	"errors"
-)
-
-func (c *Setup) setupRackspace() (*common.Conf, *common.Conf, error) {
-	return nil, nil, errors.New("Rackspace support is unfinished.")
-}
+package storage

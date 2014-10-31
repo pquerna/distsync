@@ -33,6 +33,7 @@ type Conf struct {
 	StorageBucket string
 	OutputDir     *string
 	Aws           *AwsCreds
+	Rackspace     *RackspaceCreds
 	PeerDist      *PeerDist
 }
 
@@ -48,6 +49,12 @@ type AwsCreds struct {
 	SecretKey string
 }
 
+type RackspaceCreds struct {
+	Region   string
+	Username string
+	ApiKey   string
+}
+
 func NewConf() *Conf {
 	return &Conf{
 		Encrypt:   "AEAD_AES_128_CBC_HMAC_SHA_256",
@@ -55,6 +62,7 @@ func NewConf() *Conf {
 		Storage:   "S3",
 		OutputDir: nil,
 		Aws:       nil,
+		Rackspace: nil,
 		PeerDist:  nil,
 	}
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pquerna/distsync/common"
+	"github.com/pquerna/distsync/setup"
 
 	"flag"
 	_ "fmt"
@@ -74,14 +75,14 @@ func (c *Setup) Run(args []string) int {
 	c.Ui.Info("")
 	switch backend {
 	case BACKEND_AWS:
-		clientconf, servconf, err = c.setupAws()
+		clientconf, servconf, err = setup.AWS(c.Ui)
 		if err != nil {
 			c.Ui.Error("Error: " + err.Error())
 			c.Ui.Error("")
 			return 1
 		}
 	case BACKEND_RACKSPACE:
-		clientconf, servconf, err = c.setupRackspace()
+		clientconf, servconf, err = setup.Rackspace(c.Ui)
 		if err != nil {
 			c.Ui.Error("Error: " + err.Error())
 			c.Ui.Error("")
@@ -139,24 +140,23 @@ func (c *Setup) Run(args []string) int {
 type backend int
 
 const (
-	BACKEND_NONE backend = 1 << iota
-	BACKEND_AWS
-	BACKEND_RACKSPACE
+	BACKEND_NONE      backend = 0
+	BACKEND_AWS               = 1
+	BACKEND_RACKSPACE         = 2
 )
 
 func (c *Setup) pickBackend() (backend, error) {
 
 	// TODO: more choices, use array offset
-	_, err := common.Choice(c.Ui, "What Cloud Service should distsync use to store files?", []string{
+	be, err := common.Choice(c.Ui, "What Cloud Service should distsync use to store files?", []string{
 		"AWS S3",
-		// "Rackspace Cloud Files",
+		"Rackspace Cloud Files",
 	})
 
 	if err != nil {
 		return BACKEND_NONE, err
 	}
-
-	return BACKEND_AWS, nil
+	return backend(be + 1), nil
 }
 
 func fileexists(name string) bool {
