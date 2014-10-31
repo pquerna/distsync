@@ -23,26 +23,37 @@ import (
 	"github.com/pquerna/distsync/common"
 	"github.com/rackspace/gophercloud"
 	identAdminRoles "github.com/rackspace/gophercloud/openstack/identity/v2/extensions/admin/roles"
+	osUsers "github.com/rackspace/gophercloud/openstack/identity/v2/users"
 	"github.com/rackspace/gophercloud/pagination"
 	"github.com/rackspace/gophercloud/rackspace"
 	identityRoles "github.com/rackspace/gophercloud/rackspace/identity/v2/roles"
 	"github.com/rackspace/gophercloud/rackspace/identity/v2/tokens"
 	identityUsers "github.com/rackspace/gophercloud/rackspace/identity/v2/users"
 
+	"errors"
 	"sort"
 )
 
-func rackspaceCreateUser(sc *gophercloud.ServiceClient, name string, roles []*identAdminRoles.Role) (string, error) {
+func rackspaceCreateUser(sc *gophercloud.ServiceClient,
+	originalUsername string,
+	name string,
+	roles []*identAdminRoles.Role) (string, error) {
+
+	email, err := getRackspaceEmail(sc, originalUsername)
+	if err != err {
+		return "", err
+	}
 
 	log.WithFields(log.Fields{
-		"username": name,
+		"user.name":  name,
+		"user.email": email,
 	}).Info("Creating User")
 
 	theEnabledOsStateApiIsNotAwesome := true
 	opts := identityUsers.CreateOpts{
 		Username: name,
 		Enabled:  &theEnabledOsStateApiIsNotAwesome,
-		Email:    "",
+		Email:    email,
 	}
 
 	user, err := identityUsers.Create(sc, opts).Extract()
@@ -50,10 +61,15 @@ func rackspaceCreateUser(sc *gophercloud.ServiceClient, name string, roles []*id
 		return "", err
 	}
 
+	log.WithFields(log.Fields{
+		"user.id":   user.ID,
+		"user.name": user.Username,
+	}).Info("Created User")
+
 	for _, r := range roles {
 		log.WithFields(log.Fields{
 			"user.id":   user.ID,
-			"user.name": user.Name,
+			"user.name": user.Username,
 			"role.id":   r.ID,
 			"role.name": r.Name,
 		}).Info("Adding role to user")
@@ -64,7 +80,7 @@ func rackspaceCreateUser(sc *gophercloud.ServiceClient, name string, roles []*id
 	}
 
 	log.WithFields(log.Fields{
-		"user.name": user.Name,
+		"user.name": user.Username,
 	}).Info("Creating API Key")
 
 	apiKey, err := identityUsers.ResetAPIKey(sc, user.ID).Extract()
@@ -146,11 +162,33 @@ func getRackspaceRegions(sc *gophercloud.ServiceClient, auth gophercloud.AuthOpt
 	return regions, nil
 }
 
-func getRackspaceRoles(sc *gophercloud.ServiceClient) ([]identAdminRoles.Role, error) {
-	pager := identityRoles.List(sc)
+func getRackspaceEmail(sc *gophercloud.ServiceClient, username string) (string, error) {
+	allUsers := make([]osUsers.User, 0)
+	err := identityUsers.List(sc).EachPage(func(p pagination.Page) (bool, error) {
+		users, err := osUsers.ExtractUsers(p)
+		if err != nil {
+			return false, err
+		}
+		allUsers = append(allUsers, users...)
+		return true, nil
+	})
 
+	if err != nil {
+		return "", err
+	}
+
+	for _, user := range allUsers {
+		if user.Name == username || user.Username == username {
+			return user.Email, nil
+		}
+	}
+
+	return "", errors.New("Could not find email address for existing user.")
+}
+
+func getRackspaceRoles(sc *gophercloud.ServiceClient) ([]identAdminRoles.Role, error) {
 	allRoles := make([]identAdminRoles.Role, 0)
-	err := pager.EachPage(func(p pagination.Page) (bool, error) {
+	err := identityRoles.List(sc).EachPage(func(p pagination.Page) (bool, error) {
 		roles, err := identAdminRoles.ExtractRoles(p)
 		if err != nil {
 			return false, err
@@ -211,7 +249,7 @@ func Rackspace(ui cli.Ui) (*common.Conf, *common.Conf, error) {
 	uploader := "distsyncUpload" + si.Id
 	downloader := "distsyncDownload" + si.Id
 
-	keyUploader, err := rackspaceCreateUser(sc, uploader, getRoles(roles, "object-store:admin"))
+	keyUploader, err := rackspaceCreateUser(sc, auth.Username, uploader, getRoles(roles, "object-store:admin"))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -225,7 +263,7 @@ func Rackspace(ui cli.Ui) (*common.Conf, *common.Conf, error) {
 		ApiKey:   keyUploader,
 	}
 
-	keyDownloader, err := rackspaceCreateUser(sc, downloader, getRoles(roles, "object-store:observer"))
+	keyDownloader, err := rackspaceCreateUser(sc, auth.Username, downloader, getRoles(roles, "object-store:observer"))
 	if err != nil {
 		return nil, nil, err
 	}
