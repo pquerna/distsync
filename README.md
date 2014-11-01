@@ -1,4 +1,4 @@
-# STATUS: WIP. ETA 3 days. DEAL WITH IT.
+# STATUS: WIP. ETA 2.3 days remaining. DEAL WITH IT.
 
 # distsync
 
