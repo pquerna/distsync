@@ -87,6 +87,8 @@ func (p *timedPoller) mainLoop() {
 		case <-timeChan:
 			changed, err := p.poller.Poll()
 			if err != nil {
+				errCount++
+
 				log.WithFields(log.Fields{
 					"error":       err,
 					"error_count": errCount,
