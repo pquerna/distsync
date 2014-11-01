@@ -75,7 +75,7 @@ func NewFromConf(c *common.Conf) (Storage, error) {
 	switch strings.ToUpper(c.Storage) {
 	case "S3":
 		return NewS3(c.Aws, c.StorageBucket)
-	case "CloudFiles":
+	case "CLOUDFILES":
 		return NewCloudFiles(c.Rackspace, c.StorageBucket)
 	case "disabled-S3+BITTORRENT":
 		return NewS3(c.Aws, c.StorageBucket)
@@ -96,7 +96,7 @@ func NewPersistentDownloader(c *common.Conf) (PersistentDownloader, error) {
 	switch strings.ToUpper(c.Storage) {
 	case "S3":
 		return NewS3(c.Aws, c.StorageBucket)
-	case "CloudFiles":
+	case "CLOUDFILES":
 		return NewCloudFiles(c.Rackspace, c.StorageBucket)
 	case "disabled-S3+BITTORRENT":
 		return NewTorrentDownloader(c)

@@ -89,6 +89,12 @@ func (c *Daemon) Run(args []string) int {
 		return 1
 	}
 
+	if c.conf.OutputDir == nil {
+		c.Ui.Error("Error: must set OutputDir in configuration file.")
+		c.Ui.Error("")
+		return 1
+	}
+
 	c.dl, err = storage.NewPersistentDownloader(c.conf)
 	if err != nil {
 		c.Ui.Error("Error configuring downloader: " + err.Error())
