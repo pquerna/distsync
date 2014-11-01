@@ -75,7 +75,23 @@ func (cf *CloudFilesStorage) client() (*gophercloud.ServiceClient, error) {
 }
 
 func (cf *CloudFilesStorage) Download(filename string, writer io.Writer) error {
-	return errors.New("not done")
+	client, err := cf.client()
+	if err != nil {
+		return err
+	}
+
+	resp := objects.Download(client, cf.bucket, filename, &osObjects.DownloadOpts{})
+	if resp.Err != nil {
+		return resp.Err
+	}
+	defer resp.Body.Close()
+
+	_, err = io.Copy(writer, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (cf *CloudFilesStorage) List(dc crypto.Decryptor) ([]*FileInfo, error) {
