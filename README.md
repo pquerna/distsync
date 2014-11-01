@@ -2,7 +2,7 @@
 
 # distsync
 
-`distsync` is the best damn way to distribute tarballs from your build infrastructure to production servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing) is not intended for _personal_ use, instead all options and design choices are optimized for server use.
+`distsync` is the best damn way to distribute tarballs from your build infrastructure to production servers. Unlike projects like [syncthing](https://github.com/syncthing/syncthing), distsync is not intended for _personal_ use, instead all options and design choices are optimized for __servers__.
 
 This means distsync is only optimized to move your application tarball or docker export from your CI, to a group of servers, using public cloud object stores as it's primary storage backend.
 
