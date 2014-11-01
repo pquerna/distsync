@@ -144,11 +144,18 @@ func overwriteFile(name string, t time.Time) bool {
 		return false
 	}
 
-	if st.ModTime().After(t) || st.ModTime().Equal(t) {
+	// unfortunately, some filesystems store better resolution,
+	// and some backends store shitty time resolutions...
+	// so we round to 1 second.
+	// TODO: expose hashing if the origin can export a hash at low cost.
+	localTime := st.ModTime().Truncate(time.Second)
+	originTime := t.Truncate(time.Second)
+
+	if localTime.After(originTime) || localTime.Equal(originTime) {
 		log.WithFields(log.Fields{
 			"name":         name,
-			"local_mtime":  st.ModTime().UTC(),
-			"origin_mtime": t.UTC(),
+			"local_mtime":  localTime.UTC(),
+			"origin_mtime": originTime.UTC(),
 		}).Debug("local file is >= origin file, skipping.")
 		return false
 	}
