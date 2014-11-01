@@ -38,6 +38,8 @@ func NewFromConf(c *common.Conf) (Notifier, error) {
 	switch strings.ToUpper(c.Notify) {
 	case "S3POLL":
 		return NewS3Poll(c.Aws, c.StorageBucket)
+	case "CLOUDFILESPOLL":
+		return NewCloudFilesPoll(c.Rackspace, c.StorageBucket)
 	}
 
 	return nil, errors.New("Unknown Notify backend: " + c.Notify)
