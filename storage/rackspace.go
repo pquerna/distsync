@@ -28,6 +28,7 @@ import (
 
 	"errors"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -137,7 +138,49 @@ func (cf *CloudFilesStorage) List(dc crypto.Decryptor) ([]*FileInfo, error) {
 }
 
 func (cf *CloudFilesStorage) Upload(filename string, reader io.ReadSeeker) error {
-	return errors.New("not done")
+	// just a random string taht will change the etag of .distsync,
+	// so that `notify.S3Poller` look for new files.
+	tsec, err := crypto.RandomSecret()
+	if err != nil {
+		return err
+	}
+
+	l, err := reader.Seek(0, 2)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = reader.Seek(0, 0)
+
+	if err != nil {
+		return err
+	}
+
+	client, err := cf.client()
+	if err != nil {
+		return err
+	}
+
+	_, err = objects.Create(client, cf.bucket, filename, reader, &osObjects.CreateOpts{
+		// gophercloud API issue: https://github.com/rackspace/gophercloud/issues/308
+		ContentLength: int(l),
+		ContentType:   "application/octet-stream",
+	}).ExtractHeader()
+	if err != nil {
+		return err
+	}
+
+	sr := strings.NewReader(tsec)
+	_, err = objects.Create(client, cf.bucket, ".distsync", sr, &osObjects.CreateOpts{
+		ContentLength: sr.Len(),
+		ContentType:   "text/plain",
+	}).ExtractHeader()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (cf *CloudFilesStorage) Start() error {
