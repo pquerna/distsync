@@ -288,6 +288,8 @@ func Rackspace(ui cli.Ui) (*common.Conf, *common.Conf, error) {
 	serverconf.Storage = "CloudFiles"
 	serverconf.SharedSecret = si.SharedSecret
 	serverconf.StorageBucket = si.BucketName
+	outdir := "~/"
+	serverconf.OutputDir = &outdir
 	serverconf.Rackspace = &common.RackspaceCreds{
 		Region:   region,
 		Username: downloader,
