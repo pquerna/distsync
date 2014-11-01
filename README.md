@@ -150,6 +150,49 @@ __Type__: String
 __Details__: Secret Key to use with AWS.
 
 
+#### Section: Rackspace
+
+Credentials to use against Rackspace.  The user associated with these credentials should be setup with [RBAC](http://www.rackspace.com/knowledge_center/article/overview-role-based-access-control-rbac) to limit permissions.
+
+By default `distsync setup` creates two users:
+
+* `distsyncUpload${UUID}`: API Key only user with the `object-store:admin` role. For use with `distsync upload`.
+* `distsyncDownload${UUID}`: API Key only user with the `object-store:observer` role. For use with `distsync daemon`.
+
+
+#### Rackspace.Region
+
+__Default Value__: None
+
+__Type__: Enum String
+
+__Details__: Region to use.  Must be one of:
+
+* DFW
+* HKG
+* IAD
+* ORD
+* SYD
+
+
+#### Rackspace.Username
+
+__Default Value__: None
+
+__Type__: String
+
+__Details__: Username to use with Rackspace.
+
+
+#### Rackspace.ApiKey
+
+__Default Value__: None
+
+__Type__: String
+
+__Details__: API Key associated with the user, to use with Rackspace.
+
+
 # License
 
 `distsync` was created by [Paul Querna](http://paul.querna.org/) is licensed under the [Apache Software License 2.0](./LICENSE)
