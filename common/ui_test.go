@@ -24,8 +24,8 @@ import (
 
 func TestHumanizeRate(t *testing.T) {
 	// TOOD: more test cases
-	s := HumanizeRate(100000*99, time.Second*5))
+	s := HumanizeRate(100000*99, time.Second*5)
 	if s != "2.0MB/s" {
-		t.Fatal("HumanizeRate: expected 2.0MB/s, got "+ s)
+		t.Fatal("HumanizeRate: expected 2.0MB/s, got " + s)
 	}
 }
