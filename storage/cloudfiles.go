@@ -164,7 +164,7 @@ func (cf *CloudFilesStorage) Upload(filename string, reader io.ReadSeeker) error
 
 	_, err = objects.Create(client, cf.bucket, filename, reader, &osObjects.CreateOpts{
 		// gophercloud API issue: https://github.com/rackspace/gophercloud/issues/308
-		ContentLength: int(l),
+		ContentLength: l,
 		ContentType:   "application/octet-stream",
 	}).ExtractHeader()
 	if err != nil {
@@ -173,7 +173,7 @@ func (cf *CloudFilesStorage) Upload(filename string, reader io.ReadSeeker) error
 
 	sr := strings.NewReader(tsec)
 	_, err = objects.Create(client, cf.bucket, ".distsync", sr, &osObjects.CreateOpts{
-		ContentLength: sr.Len(),
+		ContentLength: int64(sr.Len()),
 		ContentType:   "text/plain",
 	}).ExtractHeader()
 	if err != nil {
