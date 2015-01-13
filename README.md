@@ -10,14 +10,14 @@ This means distsync is only optimized to move your application tarball or docker
 
 ## Features
 
-* __Simple__: Single command to upload from CI, easy daemon mode for servers.
+* __Simple__: Single command to upload from CI, and a daemon mode for servers.
 * __Encrypted__: [AEAD Encryption](https://github.com/codahale/etm) of both file contents and file names.
 * __Multi-Cloud__: Supports both AWS S3 and Rackspace Cloud Files as storage backends.
 * __Pluggable__: Contributions Welcome: New storage, encryption, and transfer plugins are welcome.
 
 ## Usage
 
-1. `distsync setup` Answer the propmts, it will create a `~/.distsync` and `~/.distsyncd`.
+1. `distsync setup` Answer the prompts, it will create a `~/.distsync` and `~/.distsyncd`.
 1. Copy `~/.distsync` to your uploader (eg, Jenkins).
 1. Copy `~/.distsyncd` to your servers.
 1. Run `distsync daemon` on servers.
