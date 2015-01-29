@@ -29,7 +29,7 @@ This means distsync is only optimized to move your application tarball or docker
 
 * `distsync setup` creates two identities with limited permissions.  The first is for uploading, it allows distsync to upload to a single bucket.  The second is for downloading which gives it permissions to watch for notifications, list, and download from the bucket.
 * `distsync upload` encrypts the specified file, uploads it to s3, and notifies servers it is available.
-* `distsync daemon` watches for notifications, and on a new file being available will download it to the local path using BitTorrent and HTTPS from S3.
+* `distsync daemon` watches for notifications, and on a new file being available will download it to the local path using  HTTPS from S3.
 
 
 ## Configuration File Reference
@@ -105,7 +105,7 @@ __Type__: Enum String
 __Details__: Storage backend used to upload and download files. Must be one of:
 
 * S3
-* S3+BitTorrent
+* CloudFilesb
 
 
 #### Section: Aws
