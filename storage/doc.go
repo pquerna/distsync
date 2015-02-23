@@ -98,10 +98,10 @@ func NewPersistentDownloader(c *common.Conf) (PersistentDownloader, error) {
 		return NewS3(c.Aws, c.StorageBucket)
 	case "CLOUDFILES":
 		return NewCloudFiles(c.Rackspace, c.StorageBucket)
-	case "disabled-S3+BITTORRENT":
-		return NewTorrentDownloader(c)
-	case "disabled-S3+P2P":
-		return NewPeerDownloader(c)
+	case "S3+P2P":
+		return NewPeerDownloader(c, "S3")
+	case "CLOUDFILES+P2P":
+		return NewPeerDownloader(c, "CLOUDFILES")
 	}
 
 	return nil, errors.New("Unknown storage backend: " + c.Storage)

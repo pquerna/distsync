@@ -35,7 +35,7 @@ type PeerDownloader struct {
 	outputDir string
 }
 
-func NewPeerDownloader(conf *common.Conf) (PersistentDownloader, error) {
+func NewPeerDownloader(conf *common.Conf, seed string) (PersistentDownloader, error) {
 	if conf.OutputDir == nil {
 		return nil, errors.New("Config Error: OutputDir must be set.")
 	}
@@ -73,7 +73,7 @@ func NewPeerDownloader(conf *common.Conf) (PersistentDownloader, error) {
 		}
 	}
 
-	pd, err := peerdist.New(nil, la, ga, s3d)
+	pd, err := peerdist.New(c., la, ga, s3d)
 	if err != nil {
 		return nil, err
 	}

@@ -39,8 +39,8 @@ type Conf struct {
 
 type PeerDist struct {
 	Region     string
-	ListenAddr string
 	GossipAddr string
+	ServerAddr string
 }
 
 type AwsCreds struct {

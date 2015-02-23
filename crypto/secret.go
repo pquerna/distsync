@@ -47,7 +47,7 @@ func RandomThing(byteLength int, checksum bool) (string, error) {
 }
 
 func RandomSecret() (string, error) {
-	return RandomThing(32, true)
+	return RandomThing(64, true)
 }
 
 func decodeSecret(secin string, seclen int) ([]byte, error) {

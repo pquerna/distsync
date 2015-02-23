@@ -49,6 +49,43 @@ func NewEtmCryptor(secret []byte) (Cryptor, error) {
 	}, nil
 }
 
+func (e *EtmCryptor) PeerSecret() (string, error) {
+	var salt [16]byte
+
+	_, err := rand.Read(salt)
+	if err != nil {
+		return "", err
+	}
+
+	mac := hmac.New(sha256.New, e.secret)
+	mac.Write(salt)
+	outMAC := mac.Sum(nil)
+	out := append(salt, outmac...)
+
+	return base64.URLEncoding.EncodeToString(out), nil
+}
+
+func (e *EtmCryptor) ValidatePeerSecret(secin string) (bool, error) {
+	buf, err := base64.URLEncoding.DecodeString(secin)
+	if err != nil {
+		return false, err
+	}
+
+	var salt [16]byte
+
+	_, err := rand.Read(salt)
+	if err != nil {
+		return "", err
+	}
+
+	mac := hmac.New(sha256.New, e.secret)
+	mac.Write(salt)
+	outMAC := mac.Sum(nil)
+	out := append(salt, outmac...)
+
+	return base64.URLEncoding.EncodeToString(out), nil
+}
+
 var v1NameHeader = []byte("d0")
 
 func (e *EtmCryptor) EncryptName(clearName string) (string, error) {

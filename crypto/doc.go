@@ -35,9 +35,15 @@ type Decryptor interface {
 	Decrypt(io.Reader, io.Writer) error
 }
 
+type PeerSecretor interface {
+	GeneratePeerSecret() (string, error)
+	ValidatePeerSecret(string) (bool, error)
+}
+
 type Cryptor interface {
 	Encryptor
 	Decryptor
+	PeerSecretor
 }
 
 func NewFromConf(c *common.Conf) (Cryptor, error) {
