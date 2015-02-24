@@ -57,7 +57,8 @@ type RackspaceCreds struct {
 
 func NewConf() *Conf {
 	return &Conf{
-		Encrypt:   "AEAD_AES_128_CBC_HMAC_SHA_256",
+		Encrypt: "AEAD_CHACHA20_POLY1305",
+		//Encrypt:   "AEAD_AES_128_CBC_HMAC_SHA_256",
 		Notify:    "S3Poll",
 		Storage:   "S3",
 		OutputDir: nil,

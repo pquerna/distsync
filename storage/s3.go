@@ -172,19 +172,10 @@ func (s *S3Storage) List(dc crypto.Decryptor) ([]*FileInfo, error) {
 			return nil, err
 		}
 
-		name := ""
-		if dc != nil {
-			name, err = dc.DecryptName(key.Key)
-			if err != nil {
-				return nil, err
-			}
-		}
-
 		rv = append(rv, &FileInfo{
-			EncryptedName: key.Key,
-			Name:          name,
-			LastModified:  lm,
-			Length:        key.Size,
+			Name:         key.Key,
+			LastModified: lm,
+			Length:       key.Size,
 		})
 	}
 

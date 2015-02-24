@@ -149,13 +149,12 @@ func (dq *DownloadQueue) download(fd *FileDownload) error {
 		os.Remove(tmpFileEnc.Name())
 	}()
 
-	err = dq.dl.Download(fd.FileInfo.EncryptedName, tmpFileEnc)
+	err = dq.dl.Download(fd.FileInfo.Name, tmpFileEnc)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"file":           fd.FileInfo.Name,
-			"encrypted_name": fd.FileInfo.EncryptedName,
-			"workdir":        workDir,
-			"error":          err,
+			"file":    fd.FileInfo.Name,
+			"workdir": workDir,
+			"error":   err,
 		}).Error("Download failed")
 		return err
 	}
@@ -256,9 +255,8 @@ func (dq *DownloadQueue) worker() {
 			err := dq.download(req)
 			if err != nil {
 				log.WithFields(log.Fields{
-					"error":          err,
-					"name":           req.FileInfo.Name,
-					"encrypted_name": req.FileInfo.EncryptedName,
+					"error": err,
+					"name":  req.FileInfo.Name,
 				}).Error("Error downloading.")
 			}
 		}

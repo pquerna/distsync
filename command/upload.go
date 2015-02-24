@@ -149,19 +149,11 @@ func (c *Upload) _uploadFile(filename string) error {
 		return &stopError{}
 	}
 
-	enName, err := ec.EncryptName(shortName)
-	if err != nil {
-		return err
-	}
-	if c.stop != nil {
-		return &stopError{}
-	}
-
 	// TOOD: lock? bleh
-	c.Ui.Info("Uploading " + shortName + " -> " + enName)
+	c.Ui.Info("Uploading " + shortName)
 
 	// TODO: channel for cancellation of upload?
-	err = s.Upload(enName, tmpFile)
+	err = s.Upload(shortName, tmpFile)
 	if err != nil {
 		return err
 	}

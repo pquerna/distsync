@@ -116,19 +116,11 @@ func (cf *CloudFilesStorage) List(dc crypto.Decryptor) ([]*FileInfo, error) {
 			if err != nil {
 				return false, err
 			}
-			name := ""
-			if dc != nil {
-				name, err = dc.DecryptName(obj.Name)
-				if err != nil {
-					return false, err
-				}
-			}
 
 			rv = append(rv, &FileInfo{
-				EncryptedName: obj.Name,
-				Name:          name,
-				LastModified:  lm,
-				Length:        int64(obj.Bytes),
+				Name:         obj.Name,
+				LastModified: lm,
+				Length:       int64(obj.Bytes),
 			})
 		}
 		return true, nil

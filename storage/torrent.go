@@ -198,11 +198,7 @@ func (td *TorrentDownloader) Stop() error {
 func (td *TorrentDownloader) torrentNameToClear(tf string) (string, error) {
 	_, tf = filepath.Split(tf)
 	tf = strings.TrimSuffix(tf, ".torrent")
-	name, err := td.ec.DecryptName(tf)
-	if err != nil {
-		return "", err
-	}
-	return name, nil
+	return tf, nil
 }
 
 func (td *TorrentDownloader) loadExistingTorrents() error {

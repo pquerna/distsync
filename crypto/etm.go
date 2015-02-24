@@ -18,6 +18,7 @@
 package crypto
 
 import (
+	"github.com/codahale/chacha20poly1305"
 	"github.com/codahale/etm"
 
 	"bytes"
@@ -25,19 +26,19 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"io"
 )
 
 type EtmCryptor struct {
+	ctype  string
 	secret []byte
 	c      cipher.AEAD
 }
 
 // 32-byte secret
-func NewEtmCryptor(secret []byte) (Cryptor, error) {
+func NewAES128SHA256(secret []byte) (Cryptor, error) {
 	e, err := etm.NewAES128SHA256(secret)
 	if err != nil {
 		return nil, err
@@ -46,47 +47,22 @@ func NewEtmCryptor(secret []byte) (Cryptor, error) {
 	return &EtmCryptor{
 		secret: secret,
 		c:      e,
+		ctype:  "AEAD_AES_128_CBC_HMAC_SHA_256",
 	}, nil
 }
 
-var v1NameHeader = []byte("d0")
-
-func (e *EtmCryptor) EncryptName(clearName string) (string, error) {
-	clearBuf := []byte(clearName)
-	nonce := make([]byte, e.c.NonceSize())
-	enbuf := make([]byte, 0, len(clearName)+e.c.Overhead()+2)
-
-	_, err := rand.Read(nonce)
+// 32-byte secret
+func NewChacha20poly1305(secret []byte) (Cryptor, error) {
+	e, err := chacha20poly1305.New(secret)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	enbuf = append(enbuf, v1NameHeader...)
-
-	enbuf = e.c.Seal(enbuf, nonce, clearBuf, []byte{})
-
-	return base64.URLEncoding.EncodeToString(enbuf), nil
-}
-
-func (e *EtmCryptor) DecryptName(enName string) (string, error) {
-	buf, err := base64.URLEncoding.DecodeString(enName)
-	if err != nil {
-		return "", err
-	}
-
-	if bytes.Compare(v1NameHeader, buf[0:2]) != 0 {
-		return "", errors.New("DecryptName: Unknown header.")
-	}
-
-	clearbuf := make([]byte, 0, len(buf))
-
-	clearbuf, err = e.c.Open(clearbuf, nil, buf[2:], []byte{})
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(clearbuf[:]), nil
+	return &EtmCryptor{
+		secret: secret,
+		c:      e,
+		ctype:  "AEAD_CHACHA20_POLY1305",
+	}, nil
 }
 
 var v1header = []byte("distsync01")
@@ -100,6 +76,7 @@ var v1maxChunkSize = uint32(v1chunkSize * 10)
 //
 // Header: 10 bytes for version and cipher identification.
 //		"distsync01": v1, AEAD_AES_128_CBC_HMAC_SHA_256.
+//		"distsync02": v2, AEAD_CHACHA20_POLY1305
 // Data block(s):
 // 		4-bytes chunk size. (PutUint32)
 // 		AEAD encrypted data. (up to `v1maxChunkSize`)
@@ -114,8 +91,17 @@ func (e *EtmCryptor) Encrypt(r io.Reader, w io.Writer) error {
 	// TOOD: TeeWriter for HMAC?
 	mac := hmac.New(sha256.New, e.secret)
 
-	_, err := io.WriteString(w, "distsync01")
-	mac.Write([]byte("distsync01"))
+	s := ""
+	switch e.ctype {
+	case "AEAD_AES_128_CBC_HMAC_SHA_256":
+		s = "distsync01"
+	case "AEAD_CHACHA20_POLY1305":
+		s = "distsync02"
+	}
+
+	_, err := io.WriteString(w, s)
+	mac.Write([]byte(s))
+
 	if err != nil {
 		return err
 	}

@@ -26,12 +26,10 @@ import (
 )
 
 type Encryptor interface {
-	EncryptName(name string) (string, error)
 	Encrypt(io.Reader, io.Writer) error
 }
 
 type Decryptor interface {
-	DecryptName(name string) (string, error)
 	Decrypt(io.Reader, io.Writer) error
 }
 
@@ -50,7 +48,9 @@ func NewFromConf(c *common.Conf) (Cryptor, error) {
 
 	switch strings.ToUpper(c.Encrypt) {
 	case "AEAD_AES_128_CBC_HMAC_SHA_256":
-		return NewEtmCryptor(secret)
+		return NewAES128SHA256(secret)
+	case "AEAD_CHACHA20_POLY1305":
+		return NewChacha20poly1305(secret)
 	}
 
 	return nil, errors.New("Unknown crypto backend: " + c.Encrypt)
