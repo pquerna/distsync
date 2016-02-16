@@ -19,7 +19,6 @@ package crypto
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 )
 
@@ -28,7 +27,7 @@ func TestRoundTrip(t *testing.T) {
 	dst := &bytes.Buffer{}
 	roundtrip := &bytes.Buffer{}
 
-	ec, err := NewEtmCryptor([]byte("hellohelloworld1hellohelloworld1"))
+	ec, err := NewAES128SHA256([]byte("hellohelloworld1hellohelloworld1"))
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
@@ -56,7 +55,7 @@ func TestTampered(t *testing.T) {
 	dst := &bytes.Buffer{}
 	roundtrip := &bytes.Buffer{}
 
-	ec, err := NewEtmCryptor([]byte("hellohelloworld1hellohelloworld1"))
+	ec, err := NewAES128SHA256([]byte("hellohelloworld1hellohelloworld1"))
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
