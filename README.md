@@ -1,4 +1,4 @@
-# STATUS: WIP. ETA 2.3 days remaining. DEAL WITH IT.
+# STATUS: Kinda works. Fork it, improve it. DEAL WITH IT.
 
 # distsync
 
